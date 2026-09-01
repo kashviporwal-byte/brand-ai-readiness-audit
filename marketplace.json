@@ -1,0 +1,40 @@
+{
+  "name": "brand-ai-readiness-audit",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Agent Skill Marketplace for auditing website AI Discoverability (indexing, understanding, citation) and On-Site Referral Engagement.",
+  "author": "Adobe University Hackathon 2026 Submission",
+  "license": "Apache-2.0",
+  "skills": [
+    {
+      "id": "audit-orchestrator",
+      "path": "skills/audit-orchestrator",
+      "entrypoint": true,
+      "description": "Coordinates full-site audit across all domain skills, enforces robots.txt polite crawling, deduplicates findings, applies deterministic severity scoring, and emits the final JSON audit report with proactive recommendations."
+    },
+    {
+      "id": "crawl-bot-access",
+      "path": "skills/crawl-bot-access",
+      "description": "Audits AI crawler accessibility, robots.txt directives for AI user-agents (GPTBot, ClaudeBot, PerplexityBot, etc.), X-Robots-Tag headers, sitemaps, and llms.txt adoption."
+    },
+    {
+      "id": "render-extraction-audit",
+      "path": "skills/render-extraction-audit",
+      "description": "Audits client-side JS hydration gaps (raw HTML vs DOM text), facts trapped in non-text media (missing alt text, canvas, video/audio transcripts), and semantic HTML hierarchy."
+    },
+    {
+      "id": "entity-semantics-audit",
+      "path": "skills/entity-semantics-audit",
+      "description": "Audits Schema.org JSON-LD structured data, entity disambiguation via sameAs links (Wikidata, Wikipedia, Crunchbase), quotable definition sentences, and Appendix E personalization signals (areaServed, hreflang)."
+    },
+    {
+      "id": "freshness-corroboration",
+      "path": "skills/freshness-corroboration",
+      "description": "Audits temporal integrity (timestamps, copyright staleness), Appendix D cross-web corroboration (NAP consistency, multi-source agreement), and Appendix F summarization information density."
+    },
+    {
+      "id": "engagement-ux-audit",
+      "path": "skills/engagement-ux-audit",
+      "description": "Audits on-site landing experience for AI-referred visitors, heading ID anchor links (#section-id), above-the-fold value clarity (3-second rule), popup/interstitial bounce risks, and cognitive load (Flesch-Kincaid)."
+    }
+  ]
+}

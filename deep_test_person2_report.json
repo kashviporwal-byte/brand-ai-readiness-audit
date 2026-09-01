@@ -1,0 +1,238 @@
+{
+  "person": "Person 2 - render-extraction-audit",
+  "unit_tests": [
+    {
+      "test": "fallback_strips_script_content",
+      "pass": true,
+      "detail": "fallback word count=0 (JS must not count as visible text)"
+    },
+    {
+      "test": "spa_empty_shell_critical",
+      "pass": true,
+      "detail": "findings=['F-REND-001', 'F-REND-002']"
+    },
+    {
+      "test": "ssr_with_root_no_false_critical",
+      "pass": true,
+      "detail": "findings=['F-REND-002']"
+    },
+    {
+      "test": "decorative_images_skipped",
+      "pass": true,
+      "detail": "decorative imgs should not trigger F-REND-003"
+    },
+    {
+      "test": "figcaption_skips_alt_requirement",
+      "pass": true,
+      "detail": "figure caption should satisfy accessibility"
+    },
+    {
+      "test": "audio_transcript_check",
+      "pass": false,
+      "detail": "audio without transcript should flag F-REND-005; got []"
+    },
+    {
+      "test": "logo_alt_in_h1",
+      "pass": true,
+      "detail": "H1 with logo alt should not be missing; got ['F-REND-009']"
+    },
+    {
+      "test": "empty_html",
+      "pass": true,
+      "detail": "empty string returns []"
+    },
+    {
+      "test": "empty_dict",
+      "pass": true,
+      "detail": "empty dict returns []"
+    },
+    {
+      "test": "orchestrator_dict_interface",
+      "pass": true,
+      "detail": "dict interface works, 1 findings"
+    },
+    {
+      "test": "finding_schema",
+      "pass": true,
+      "detail": "missing keys: set()"
+    },
+    {
+      "test": "suggested_action_schema",
+      "pass": true,
+      "detail": "suggested_action keys: ['summary', 'priority', 'rationale', 'code_fix_example']"
+    }
+  ],
+  "live_tests": [
+    {
+      "url": "https://example.com",
+      "label": "Minimal static",
+      "fetch_s": 0.28,
+      "bytes": 559,
+      "analysis_s": 0.001,
+      "count": 1,
+      "rules": [
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://react.dev",
+      "label": "React docs",
+      "fetch_s": 0.63,
+      "bytes": 272429,
+      "analysis_s": 0.07,
+      "count": 5,
+      "rules": [
+        "F-REND-003",
+        "F-REND-006",
+        "F-REND-007",
+        "F-REND-010",
+        "F-REND-011"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 1,
+        "medium": 3,
+        "low": 1
+      }
+    },
+    {
+      "url": "https://crates.io",
+      "label": "Ember SPA shell",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://motherfuckingwebsite.com",
+      "label": "Ultra minimal",
+      "fetch_s": 1.29,
+      "bytes": 4903,
+      "analysis_s": 0.004,
+      "count": 1,
+      "rules": [
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://info.cern.ch",
+      "label": "First web page",
+      "fetch_s": 0.61,
+      "bytes": 646,
+      "analysis_s": 0.002,
+      "count": 1,
+      "rules": [
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://stripe.com",
+      "label": "Heavy SaaS",
+      "fetch_s": 2.14,
+      "bytes": 694616,
+      "analysis_s": 0.098,
+      "count": 5,
+      "rules": [
+        "F-REND-003",
+        "F-REND-004",
+        "F-REND-008",
+        "F-REND-010",
+        "F-REND-011"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 1,
+        "medium": 2,
+        "low": 2
+      }
+    },
+    {
+      "url": "https://news.ycombinator.com",
+      "label": "HN legacy layout",
+      "fetch_s": 1.74,
+      "bytes": 34167,
+      "analysis_s": 0.028,
+      "count": 3,
+      "rules": [
+        "F-REND-003",
+        "F-REND-006",
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 2,
+        "medium": 1,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://docs.python.org/3/",
+      "label": "Sphinx docs",
+      "fetch_s": 0.66,
+      "bytes": 19429,
+      "analysis_s": 0.017,
+      "count": 2,
+      "rules": [
+        "F-REND-007",
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 2,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://wikipedia.org",
+      "label": "Wikipedia portal",
+      "fetch_s": 1.22,
+      "bytes": 118274,
+      "analysis_s": 0.033,
+      "count": 2,
+      "rules": [
+        "F-REND-003",
+        "F-REND-011"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 1,
+        "medium": 1,
+        "low": 0
+      }
+    },
+    {
+      "url": "https://vercel.com",
+      "label": "Next.js marketing",
+      "fetch_s": 0.67,
+      "bytes": 3025,
+      "analysis_s": 0.001,
+      "count": 2,
+      "rules": [
+        "F-REND-006",
+        "F-REND-009"
+      ],
+      "severities": {
+        "critical": 0,
+        "high": 1,
+        "medium": 1,
+        "low": 0
+      }
+    }
+  ]
+}
