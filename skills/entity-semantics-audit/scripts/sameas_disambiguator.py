@@ -45,6 +45,20 @@ SOCIAL_DOMAINS = {
 }
 
 
+def _clean_jsonld_block(block):
+    """Strips HTML comments and CDATA wrappers before JSON parsing."""
+    if not isinstance(block, str):
+        return ""
+    b = block.strip()
+    b = re.sub(r'^\s*<!--', '', b)
+    b = re.sub(r'-->\s*$', '', b)
+    b = re.sub(r'^\s*(?:/\*\s*<!\[CDATA\[\s*\*/|//\s*<!\[CDATA\[|<!\[CDATA\[)', '', b, flags=re.IGNORECASE)
+    b = re.sub(r'(?:/\*\s*\]\]>\s*\*/|//\s*\]\]>|\]\]>)\s*$', '', b, flags=re.IGNORECASE)
+    b = re.sub(r'^\s*<!--', '', b)
+    b = re.sub(r'-->\s*$', '', b)
+    return b.strip()
+
+
 class SameAsExtractor(HTMLParser):
     """
     Extracts sameAs values from JSON-LD blocks and scans outbound
@@ -68,20 +82,25 @@ class SameAsExtractor(HTMLParser):
                 self._current_data = []
 
         elif tag_lower in ("a", "link"):
-            href = attr_dict.get("href", "")
-            if href and href.startswith("http"):
-                self.all_hrefs.append(href)
+            href = attr_dict.get("href", "").strip()
+            if href:
+                if href.startswith("//"):
+                    href = "https:" + href
+                if href.startswith(("http://", "https://")):
+                    self.all_hrefs.append(href)
 
     def handle_endtag(self, tag):
         if tag.lower() == "script" and self.in_jsonld:
             self.in_jsonld = False
             block = "".join(self._current_data).strip()
             if block:
-                try:
-                    data = json.loads(block)
-                    self._recurse_sameas(data)
-                except Exception:
-                    pass
+                cleaned = _clean_jsonld_block(block)
+                if cleaned:
+                    try:
+                        data = json.loads(cleaned)
+                        self._recurse_sameas(data)
+                    except Exception:
+                        pass
             self._current_data = []
 
     def handle_data(self, data):
@@ -92,12 +111,20 @@ class SameAsExtractor(HTMLParser):
         """Recursively walks JSON-LD structure to find all sameAs values."""
         if isinstance(obj, dict):
             same_as = obj.get("sameAs", [])
-            if isinstance(same_as, str) and same_as.startswith("http"):
-                self.sameas_from_jsonld.append(same_as)
+            if isinstance(same_as, str):
+                s = same_as.strip()
+                if s.startswith("//"):
+                    s = "https:" + s
+                if s.startswith(("http://", "https://")):
+                    self.sameas_from_jsonld.append(s)
             elif isinstance(same_as, list):
-                for s in same_as:
-                    if isinstance(s, str) and s.startswith("http"):
-                        self.sameas_from_jsonld.append(s)
+                for item in same_as:
+                    if isinstance(item, str):
+                        s = item.strip()
+                        if s.startswith("//"):
+                            s = "https:" + s
+                        if s.startswith(("http://", "https://")):
+                            self.sameas_from_jsonld.append(s)
             # Walk @graph or nested schemas
             for val in obj.values():
                 if isinstance(val, (dict, list)):
@@ -115,7 +142,13 @@ def _classify_url(url):
       ('social',    label)   — LinkedIn / GitHub / Twitter etc.
       ('other',     url)     — Unrecognised
     """
-    url_lower = url.lower()
+    if not isinstance(url, str):
+        return "other", ""
+    url_clean = url.strip()
+    if url_clean.startswith("//"):
+        url_clean = "https:" + url_clean
+    url_lower = url_clean.lower()
+
     for domain, label in AUTHORITY_KG_DOMAINS.items():
         if domain in url_lower:
             return "kg", label
@@ -125,7 +158,7 @@ def _classify_url(url):
     for domain, label in SOCIAL_DOMAINS.items():
         if domain in url_lower:
             return "social", label
-    return "other", url
+    return "other", url_clean
 
 
 def _summarise_links(links):

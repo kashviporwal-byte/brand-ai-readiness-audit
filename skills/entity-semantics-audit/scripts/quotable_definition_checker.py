@@ -30,10 +30,15 @@ JARGON_THRESHOLD = 3
 # ── Definition sentence patterns ─────────────────────────────────────────────
 # Ordered from most specific to most general; first match wins.
 DEFINITION_PATTERNS = [
-    # "[Brand/X/We] is/are a/an [type] that/which [verb phrase]..."
+    # "[Brand/X/We] is/are a/an [type] that/which/to/for [verb phrase]..."
     re.compile(
         r'\b[\w][\w\s\-]{0,35}\s+(?:is|are)\s+an?\s+[\w][\w\s\-,]{5,80}'
         r'(?:that|which|to|for)\s+[\w]',
+        re.IGNORECASE,
+    ),
+    # "[Brand/X] is/are a/an [noun phrase]" (copula definition)
+    re.compile(
+        r'\b[\w][\w\s\-]{0,35}\s+(?:is|are)\s+an?\s+[\w][\w\s\-,]{5,90}\b',
         re.IGNORECASE,
     ),
     # "[X] is the [only/first/leading/...] [noun phrase]"
@@ -50,7 +55,7 @@ DEFINITION_PATTERNS = [
     ),
     # "We build/create/make [noun phrase] for [audience]"
     re.compile(
-        r'\bWe\s+(?:build|create|make|develop|design|run|operate)\s+[\w][\w\s\-,]{5,80}\b',
+        r'\bWe\s+(?:build|create|make|develop|design|run|operate|provide|deliver)\s+[\w][\w\s\-,]{5,80}\b',
         re.IGNORECASE,
     ),
 ]

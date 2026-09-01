@@ -67,13 +67,50 @@ class JSONLDExtractor(HTMLParser):
             self._current_data.append(data)
 
 
+def _clean_type_string(t):
+    """Strips namespace prefixes, schemas URLs, and URI fragments from a @type string."""
+    if not isinstance(t, str):
+        return ""
+    t = t.strip()
+    if "/" in t:
+        t = t.rsplit("/", 1)[-1]
+    if "#" in t:
+        t = t.rsplit("#", 1)[-1]
+    if ":" in t and not t.startswith("http"):
+        t = t.split(":", 1)[-1]
+    return t.strip()
+
+
 def _normalize_type(type_val):
-    """Normalises @type into a flat list of strings regardless of input shape."""
-    if isinstance(type_val, str):
-        return [type_val]
-    if isinstance(type_val, list):
-        return [t for t in type_val if isinstance(t, str)]
-    return []
+    """Normalises @type into a flat list of clean type name strings regardless of input shape or URI prefix."""
+    raw = [type_val] if isinstance(type_val, str) else type_val if isinstance(type_val, list) else []
+    cleaned_types = []
+    for t in raw:
+        if isinstance(t, str):
+            clean = _clean_type_string(t)
+            if clean:
+                cleaned_types.append(clean)
+    return cleaned_types
+
+
+def _clean_jsonld_raw_block(raw_block):
+    """
+    Strips HTML comments (<!-- ... -->), CDATA wrappers (/* <![CDATA[ */, // <![CDATA[),
+    and leading/trailing whitespace/bom before JSON parsing.
+    """
+    if not isinstance(raw_block, str):
+        return ""
+    cleaned = raw_block.strip()
+    # Strip HTML comment start <!-- and end -->
+    cleaned = re.sub(r'^\s*<!--', '', cleaned)
+    cleaned = re.sub(r'-->\s*$', '', cleaned)
+    # Strip CDATA wrappers /* <![CDATA[ */ or // <![CDATA[ or <![CDATA[
+    cleaned = re.sub(r'^\s*(?:/\*\s*<!\[CDATA\[\s*\*/|//\s*<!\[CDATA\[|<!\[CDATA\[)', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'(?:/\*\s*\]\]>\s*\*/|//\s*\]\]>|\]\]>)\s*$', '', cleaned, flags=re.IGNORECASE)
+    # Trailing/leading comment markers cleanup
+    cleaned = re.sub(r'^\s*<!--', '', cleaned)
+    cleaned = re.sub(r'-->\s*$', '', cleaned)
+    return cleaned.strip()
 
 
 def _flatten_schemas(data):
@@ -126,8 +163,11 @@ def check_jsonld_schema(raw_html, page_url=""):
         raw_block = raw_block.strip()
         if not raw_block:
             continue
+        cleaned_block = _clean_jsonld_raw_block(raw_block)
+        if not cleaned_block:
+            continue
         try:
-            data = json.loads(raw_block)
+            data = json.loads(cleaned_block)
             parsed_schemas.extend(_flatten_schemas(data))
         except (json.JSONDecodeError, ValueError):
             # Keep a preview for evidence

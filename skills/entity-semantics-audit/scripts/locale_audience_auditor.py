@@ -149,8 +149,17 @@ def _extract_locale_from_jsonld(blocks):
     for block in blocks:
         if not block:
             continue
+        cleaned = block.strip()
+        cleaned = re.sub(r'^\s*<!--', '', cleaned)
+        cleaned = re.sub(r'-->\s*$', '', cleaned)
+        cleaned = re.sub(r'^\s*(?:/\*\s*<!\[CDATA\[\s*\*/|//\s*<!\[CDATA\[|<!\[CDATA\[)', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'(?:/\*\s*\]\]>\s*\*/|//\s*\]\]>|\]\]>)\s*$', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'^\s*<!--', '', cleaned)
+        cleaned = re.sub(r'-->\s*$', '', cleaned).strip()
+        if not cleaned:
+            continue
         try:
-            _walk(json.loads(block))
+            _walk(json.loads(cleaned))
         except Exception:
             pass
 
