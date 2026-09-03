@@ -56,8 +56,16 @@ brand-ai-readiness-audit/
 
 ## Running the Audit
 
+### Mode 1: Standard Single-Page Audit (Default)
+Fast, polite audit of a specific landing page or target URL:
 ```bash
-python skills/audit-orchestrator/scripts/audit_runner.py https://example.com
+python skills/audit-orchestrator/scripts/orchestrate_audit.py https://example.com --output report.json
 ```
 
-Outputs the official `audit_report.json` conforming to the contest schema in under 15 seconds.
+### Mode 2: Multi-Page Site-Wide Audit (Sitemap Traversal)
+Site-wide audit discovering and analyzing key high-intent pages (`/pricing`, `/docs`, `/about`) via `sitemap.xml`:
+```bash
+python skills/audit-orchestrator/scripts/orchestrate_audit.py https://example.com --multi-page --max-pages 3 --output report.json
+```
+
+Outputs the official `report.json` conforming strictly to the contest `report_schema.json` in seconds without external dependencies.

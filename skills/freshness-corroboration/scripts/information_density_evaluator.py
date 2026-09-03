@@ -80,6 +80,15 @@ _TECHNICAL_VERBS_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Domain-specific technical nouns and software concepts
+_TECHNICAL_TERMS_RE = re.compile(
+    r"\b(?:module|function|class|method|syntax|variable|parameter|argument|attribute|"
+    r"library|package|runtime|compiler|interpreter|algorithm|protocol|exception|"
+    r"endpoint|payload|handler|database|schema|query|latency|throughput|bandwidth|"
+    r"interface|namespace|callback|iterator|generator|coroutine|thread|process)\w*\b",
+    re.IGNORECASE,
+)
+
 # Stopwords — NOT substantive, NOT buzzwords: just grammar/functional tokens
 _STOPWORDS = frozenset([
     "the", "a", "an", "and", "or", "but", "in", "of", "for", "to", "is", "are",
@@ -160,13 +169,14 @@ def _count_buzzword_tokens(text):
 
 def _count_substantive_tokens(text):
     """
-    Counts substantive factual tokens: numbers, acronyms, technical verbs, URLs.
+    Counts substantive factual tokens: numbers, acronyms, technical verbs, terms, URLs.
     Returns count.
     """
     count = 0
     count += len(_NUMERIC_RE.findall(text))
     count += len(_TECHNICAL_RE.findall(text))
     count += len(_TECHNICAL_VERBS_RE.findall(text))
+    count += len(_TECHNICAL_TERMS_RE.findall(text))
     return count
 
 
@@ -278,8 +288,12 @@ def check_information_density(raw_html, page_url=""):
 
     # ── F-FRSH-006: Low Information Density ──────────────────────────────────
     if density_score < _DENSITY_HIGH_RISK:
-        severity = "high"
-        density_interpretation = "critically low"
+        if buzzword_ratio < 0.02:
+            severity = "medium"
+            density_interpretation = "moderate technical density (low buzzwords)"
+        else:
+            severity = "high"
+            density_interpretation = "critically low (high fluff disparity)"
     elif density_score < _DENSITY_MEDIUM_RISK:
         severity = "medium"
         density_interpretation = "below the recommended threshold"

@@ -80,7 +80,19 @@ class VisibleTextExtractor(HTMLParser):
         self.text_chunks = []
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() in _SKIP_TAGS:
+        attrs_dict = {k.lower(): (v.lower() if v else "") for k, v in attrs}
+        role = attrs_dict.get("role", "")
+        cls = attrs_dict.get("class", "")
+        elem_id = attrs_dict.get("id", "")
+
+        is_nav_chrome = (
+            tag.lower() in _SKIP_TAGS
+            or role in ("navigation", "menubar", "banner", "complementary", "search")
+            or any(kw in cls for kw in ("nav", "menu", "sidebar", "vector-menu", "mw-navigation", "toc", "language"))
+            or any(kw in elem_id for kw in ("nav", "menu", "sidebar", "mw-navigation", "toc", "p-lang"))
+        )
+
+        if is_nav_chrome:
             self._skip_depth += 1
 
     def handle_endtag(self, tag):
@@ -146,7 +158,8 @@ def _find_definition_match(text):
 def check_quotable_definition(raw_html, page_url=""):
     """
     Checks for the presence of a clear, AI-quotable entity definition sentence
-    within the first 200 visible words of the page content and meta description.
+    within the first 200 visible words of the page content, primary <main>/<article>
+    containers, lead paragraphs, and meta description.
 
     Args:
         raw_html (str): Raw HTML of the page.
@@ -175,6 +188,34 @@ def check_quotable_definition(raw_html, page_url=""):
     # ── 3. Search for definition pattern ─────────────────────────────────────
     # Primary: top 200 words of visible text
     matched, is_jargon_heavy = _find_definition_match(first_200)
+
+    # Secondary: check inside <main> or <article> container if present
+    if not matched:
+        main_match = re.search(r'<(?:main|article)[^>]*>(.*?)</(?:main|article)>', raw_html, re.DOTALL | re.IGNORECASE)
+        if main_match:
+            main_parser = VisibleTextExtractor()
+            try:
+                main_parser.feed(main_match.group(1))
+                main_text = main_parser.get_text()
+                if len(main_text.split()) >= 15:
+                    first_200_main, _ = _first_n_words(main_text, 200)
+                    m_match, m_jargon = _find_definition_match(first_200_main)
+                    if m_match:
+                        matched, is_jargon_heavy = m_match, m_jargon
+            except Exception:
+                pass
+
+    # Tertiary: check lead substantive <p> tags
+    if not matched:
+        p_matches = re.findall(r'<p[^>]*>(.*?)</p>', raw_html, re.DOTALL | re.IGNORECASE)
+        for p_raw in p_matches[:6]:
+            p_clean = re.sub(r'<[^>]+>', ' ', p_raw)
+            p_clean = re.sub(r'\s+', ' ', p_clean).strip()
+            if len(p_clean.split()) >= 8:
+                p_match, p_jargon = _find_definition_match(p_clean)
+                if p_match:
+                    matched, is_jargon_heavy = p_match, p_jargon
+                    break
 
     # Fallback: meta description (often the best candidate)
     meta_matched, meta_jargon = _find_definition_match(meta_desc)

@@ -23,13 +23,22 @@ import sys
 import os
 import re
 import json
+import math
 import time
 import argparse
 import importlib.util
 from datetime import datetime, timezone
 import urllib.request
 import urllib.error
+from urllib.parse import urljoin, urlparse
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # Determine paths relative to this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -267,9 +276,187 @@ def generate_proactive_recommendations(findings):
     return recommendations
 
 
-def run_full_audit(target_url, quiet=False):
+# ---------------------------------------------------------------------------
+# Dynamic 4-Signal Representative Page Selection Engine
+# Eliminates keyword bias across any vertical (SaaS, Healthcare, Higher Ed, etc.)
+# ---------------------------------------------------------------------------
+
+UTILITY_NOISE_RE = re.compile(
+    r'/(?:privacy|terms|cookie|cookies|legal|disclaimer|login|signin|signup|register|cart|checkout|account)\b',
+    re.IGNORECASE
+)
+STATIC_ASSET_RE = re.compile(
+    r'\.(?:png|jpg|jpeg|gif|svg|webp|css|js|pdf|zip|xml|txt|ico|woff|woff2|ttf|mp4|mp3)$',
+    re.IGNORECASE
+)
+
+
+def extract_navigation_links(raw_html, base_url, final_url):
     """
-    Main orchestration entrypoint. Fetches page, runs all active skills,
+    Extracts high-priority internal links from primary <header> and <nav> regions.
+    Limits to the first 35 links to avoid giant footer mega-menu dilution.
+    """
+    if not raw_html:
+        return set()
+    nav_links = set()
+    norm_base = base_url.rstrip("/")
+    norm_target = final_url.rstrip("/")
+    nav_blocks = re.findall(r'<(?:nav|header)\b[^>]*>(.*?)</(?:nav|header)>', raw_html, re.IGNORECASE | re.DOTALL)
+    for block in nav_blocks:
+        hrefs = re.findall(r'<a\s+[^>]*href=["\']([^"\']+)["\']', block, re.IGNORECASE)
+        for h in hrefs[:35]:
+            abs_u = urljoin(final_url, h.strip())
+            p = urlparse(abs_u)
+            clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+            if clean_u != norm_base and clean_u != norm_target and clean_u.startswith(norm_base):
+                if not STATIC_ASSET_RE.search(clean_u) and not UTILITY_NOISE_RE.search(clean_u):
+                    nav_links.add(clean_u)
+    return nav_links
+
+
+def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
+    """
+    Discovers representative secondary pages dynamically across ANY vertical.
+    Uses a 4-Signal Structural Selection Engine:
+      1. Primary Navigation Prominence (<header>/<nav> graph)
+      2. Sitemap & Internal Link Cluster Density
+      3. Path Depth Penalty (clean top-level routes over deeply buried URLs)
+      4. Soft Section Diversity Penalty (Maximal Marginal Diagnostic Diversity)
+    """
+    if not target_url.startswith(("http://", "https://")):
+        return []
+
+    parsed = urlparse(target_url)
+    base_url = f"{parsed.scheme}://{parsed.netloc}/"
+    norm_base = base_url.rstrip("/")
+    norm_target = target_url.rstrip("/")
+
+    # 1. Primary Navigation Prominence
+    nav_links = extract_navigation_links(raw_html, base_url, target_url)
+
+    # 2. Inspect robots.txt for declared sitemap location
+    sitemap_url = urljoin(base_url, "sitemap.xml")
+    robots_url = urljoin(base_url, "robots.txt")
+    try:
+        req = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            content = resp.read().decode("utf-8", errors="replace")
+            for line in content.splitlines():
+                line_str = line.strip()
+                if line_str.lower().startswith("sitemap:"):
+                    declared = line_str.split(":", 1)[1].strip()
+                    if declared:
+                        sitemap_url = declared if declared.startswith(("http://", "https://")) else urljoin(base_url, declared.lstrip("/"))
+                        break
+    except Exception:
+        pass
+
+    candidate_urls = set(nav_links)
+
+    # 3. Fetch and parse sitemap
+    try:
+        req = urllib.request.Request(sitemap_url, headers={"User-Agent": DEFAULT_USER_AGENT})
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            xml_bytes = resp.read()
+            root = ET.fromstring(xml_bytes)
+            ns = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+            has_ns = 'http://www.sitemaps.org/schemas/sitemap/0.9' in xml_bytes.decode('utf-8', errors='ignore')
+
+            # If sitemap index, peek up to 3 child sitemaps
+            sitemaps = root.findall('.//sm:sitemap', ns) if has_ns else root.findall('.//sitemap')
+            urls = root.findall('.//sm:url', ns) if has_ns else root.findall('.//url')
+            if sitemaps:
+                for sm in sitemaps[:3]:
+                    loc_el = sm.find('sm:loc', ns) if has_ns else sm.find('loc')
+                    if loc_el is not None and loc_el.text:
+                        child_url = loc_el.text.strip()
+                        try:
+                            child_req = urllib.request.Request(child_url, headers={"User-Agent": DEFAULT_USER_AGENT})
+                            with urllib.request.urlopen(child_req, timeout=3) as ch_resp:
+                                ch_root = ET.fromstring(ch_resp.read())
+                                urls.extend(ch_root.findall('.//sm:url', ns) if has_ns else ch_root.findall('.//url'))
+                        except Exception:
+                            pass
+
+            for u in urls:
+                loc = u.find('sm:loc', ns) if has_ns else u.find('loc')
+                if loc is not None and loc.text:
+                    url_str = loc.text.strip()
+                    p = urlparse(url_str)
+                    clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+                    if clean_u != norm_target and clean_u != norm_base and clean_u.startswith(norm_base):
+                        if not STATIC_ASSET_RE.search(clean_u) and not UTILITY_NOISE_RE.search(clean_u):
+                            candidate_urls.add(clean_u)
+    except Exception:
+        pass
+
+    # 4. Fallback / supplement: extract from homepage hrefs
+    if raw_html:
+        href_matches = re.findall(r'<a\s+[^>]*href=["\']([^"\']+)["\']', raw_html, re.IGNORECASE)
+        for h in href_matches:
+            abs_url = urljoin(target_url, h.strip())
+            p = urlparse(abs_url)
+            clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+            if clean_u != norm_base and clean_u != norm_target and clean_u.startswith(norm_base):
+                if not STATIC_ASSET_RE.search(clean_u) and not UTILITY_NOISE_RE.search(clean_u):
+                    candidate_urls.add(clean_u)
+
+    if not candidate_urls:
+        return []
+
+    # 5. Compute directory cluster volume
+    clusters = {}
+    for u in candidate_urls:
+        parts = [p for p in urlparse(u).path.strip("/").split("/") if p]
+        c = parts[0] if parts else "root"
+        clusters[c] = clusters.get(c, 0) + 1
+
+    # 6. Maximal Marginal Diversity Greedy Selection
+    selected = []
+    selected_clusters = {}
+    cands = list(candidate_urls)
+
+    while len(selected) < max_pages and cands:
+        best_u = None
+        best_score = -999.0
+        for u in cands:
+            parts = [p for p in urlparse(u).path.strip("/").split("/") if p]
+            c = parts[0] if parts else "root"
+            depth = len(parts)
+
+            # Signal 1: Primary Navigation Prominence
+            nav_score = 10.0 if u in nav_links else 2.0
+
+            # Signal 2: Directory Cluster Volume
+            vol_score = min(5.0, math.log2(clusters.get(c, 1) + 1))
+
+            # Signal 3: Depth Penalty (clean top-level paths win)
+            depth_pen = max(0, depth - 1) * 2.0
+
+            # Signal 4: Soft Redundancy Penalty (enforces cross-template diversity)
+            red_pen = selected_clusters.get(c, 0) * 8.0
+
+            total_score = nav_score + vol_score - depth_pen - red_pen
+            if total_score > best_score:
+                best_score = total_score
+                best_u = u
+
+        if best_u:
+            selected.append(best_u)
+            parts = [p for p in urlparse(best_u).path.strip("/").split("/") if p]
+            c = parts[0] if parts else "root"
+            selected_clusters[c] = selected_clusters.get(c, 0) + 1
+            cands.remove(best_u)
+        else:
+            break
+
+    return selected
+
+
+def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
+    """
+    Main orchestration entrypoint. Fetches page, optionally discovers and crawls
+    high-intent secondary pages (multi-page mode), runs all active skills,
     aggregates and deduplicates findings, and constructs the report schema.
     """
     # 1. Discover skills
@@ -286,28 +473,55 @@ def run_full_audit(target_url, quiet=False):
             marker = "[+]" if reg["id"] in active_ids else "[-]"
             print(f"    {marker} {reg['id']:28} -> {status}")
 
-    # 2. Fetch page once
+    # 2. Fetch primary target page
     if not quiet:
-        print(f"\n[*] Fetching target: {target_url} ...")
+        print(f"\n[*] Fetching primary target: {target_url} ...")
     page_data = fetch_target_page(target_url)
     raw_html = page_data["raw_html"]
     final_url = page_data["target_url"]
 
+    crawled_pages = [{"url": final_url, "raw_html": raw_html, "status_code": page_data["status_code"]}]
+
+    if not quiet:
+        print(f"    -> Crawled {len(raw_html):,} bytes (HTTP {page_data['status_code']}) in {page_data['fetch_time']}s")
+
+    # 2b. Multi-Page Discovery via sitemap (if enabled)
+    if multi_page and max_pages > 1 and final_url.startswith(("http://", "https://")):
+        if not quiet:
+            print(f"\n[*] Multi-page mode enabled: discovering up to {max_pages - 1} secondary pages via sitemap...")
+        secondary_urls = discover_high_intent_pages(final_url, raw_html, max_pages=max_pages - 1)
+        if secondary_urls:
+            if not quiet:
+                for s_url in secondary_urls:
+                    print(f"    -> Discovered high-intent page: {s_url}")
+            with ThreadPoolExecutor(max_workers=min(len(secondary_urls), 4)) as fetcher:
+                future_to_url = {fetcher.submit(fetch_target_page, u): u for u in secondary_urls}
+                for f in as_completed(future_to_url):
+                    try:
+                        p_res = f.result()
+                        crawled_pages.append({
+                            "url": p_res["target_url"],
+                            "raw_html": p_res["raw_html"],
+                            "status_code": p_res["status_code"]
+                        })
+                    except Exception:
+                        pass
+        elif not quiet:
+            print(f"    -> No additional secondary pages discovered (single-page audit applies).")
+
     site_context = {
         "target_url": final_url,
         "raw_html": raw_html,
-        "crawled_pages": [{"url": final_url, "raw_html": raw_html}],
+        "crawled_pages": crawled_pages,
         "status_code": page_data["status_code"],
         "fetch_time": page_data["fetch_time"],
         "headers": page_data["headers"]
     }
 
+    # 3. Fan out to active skills in parallel for primary page
     if not quiet:
-        print(f"    -> Crawled {len(raw_html):,} bytes (HTTP {page_data['status_code']}) in {page_data['fetch_time']}s")
-
-    # 3. Fan out to active skills in parallel
-    if not quiet:
-        print(f"\n[*] Executing {len(active_skills)} active skill(s) concurrently...")
+        mode_str = f"{len(crawled_pages)} page(s)" if len(crawled_pages) > 1 else "target page"
+        print(f"\n[*] Executing {len(active_skills)} active skill(s) concurrently on {mode_str}...")
 
     all_findings = []
     execution_stats = []
@@ -324,21 +538,46 @@ def run_full_audit(target_url, quiet=False):
                 if not quiet:
                     print(f"    [ERR] {res['skill_id']}: {res['error']}")
             else:
-                all_findings.extend(res["findings"])
+                for f in res["findings"]:
+                    if "page_url" not in f:
+                        f["page_url"] = final_url
+                    all_findings.append(f)
                 if not quiet:
                     print(f"    [OK]  {res['skill_id']:28} -> {len(res['findings']):2} findings ({res['duration']}s)")
 
+    # If multi-page, run page-level skills on secondary pages
+    if len(crawled_pages) > 1:
+        page_level_skills = [s for s in active_skills if s["id"] in ("render-extraction-audit", "freshness-corroboration", "engagement-ux-audit")]
+        for sec_page in crawled_pages[1:]:
+            sec_url = sec_page["url"]
+            sec_ctx = {
+                "target_url": sec_url,
+                "raw_html": sec_page["raw_html"],
+                "crawled_pages": crawled_pages,
+                "status_code": sec_page.get("status_code", 200),
+                "fetch_time": 0.1,
+                "headers": {}
+            }
+            with ThreadPoolExecutor(max_workers=min(len(page_level_skills) or 1, 3)) as executor:
+                futures = [executor.submit(execute_skill, skill, sec_ctx, sec_url) for skill in page_level_skills]
+                for f in as_completed(futures):
+                    res = f.result()
+                    if not res["error"]:
+                        for item in res["findings"]:
+                            item["page_url"] = sec_url
+                            all_findings.append(item)
+
     # 4. Deduplicate and sort findings
-    # Priority rank: critical -> high -> medium -> low
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     unique_findings = []
-    seen_ids = set()
+    seen_signatures = set()
 
     for f in all_findings:
         fid = f.get("id", "")
-        # Enforce canonical schema keys
-        if fid and fid not in seen_ids:
-            seen_ids.add(fid)
+        p_url = f.get("page_url", final_url)
+        sig = f"{fid}::{p_url}"
+        if fid and sig not in seen_signatures:
+            seen_signatures.add(sig)
             unique_findings.append(f)
 
     unique_findings.sort(key=lambda x: severity_order.get(x.get("severity", "low"), 4))
@@ -358,9 +597,14 @@ def run_full_audit(target_url, quiet=False):
     recs = generate_proactive_recommendations(unique_findings)
 
     # 7. Construct final JSON report adhering strictly to report_schema.json
+    pages_list = [p["url"] for p in crawled_pages]
+    crawl_mode_str = "multi-page" if (multi_page and len(pages_list) > 1) else "single-page"
     report = {
         "site": final_url,
         "audited_at": datetime.now(timezone.utc).isoformat(),
+        "crawl_mode": crawl_mode_str,
+        "pages_audited": pages_list,
+        "total_pages": len(pages_list),
         "summary": tallies,
         "findings": unique_findings,
         "proactive_recommendations": recs
@@ -376,10 +620,13 @@ def print_terminal_dashboard(report, ai_score):
     site = report["site"]
     summary = report["summary"]
     findings = report["findings"]
+    total_pages = report.get("total_pages", 1)
 
     print("\n" + "=" * 72)
     print(f"  AI READINESS AUDIT REPORT: {site}")
     print(f"  Audited At: {report['audited_at']} | Overall AI Score: {ai_score}/100")
+    if total_pages > 1:
+        print(f"  Scope: Multi-Page Site Audit ({total_pages} pages audited via sitemap traversal)")
     print(f"  Summary: {summary['total_findings']} issue(s) detected "
           f"[CRITICAL: {summary['critical']}, HIGH: {summary['high']}, "
           f"MEDIUM: {summary['medium']}, LOW: {summary['low']}]")
@@ -394,8 +641,11 @@ def print_terminal_dashboard(report, ai_score):
             title = f.get("title", "")
             evidence = f.get("evidence", "")
             action = f.get("suggested_action", {})
+            page_attr = f.get("page_url", "")
 
             print(f"\n  #{i:02d} [{sev:8}] {fid}: {title}")
+            if total_pages > 1 and page_attr and page_attr != site:
+                print(f"      Page     : {page_attr}")
             print(f"      Evidence : {evidence}")
             print(f"      Action   : {action.get('summary', '')}")
             if action.get("code_fix_example"):
@@ -420,11 +670,18 @@ def main():
     parser.add_argument("--output", "-o", help="Optional path to save JSON audit report")
     parser.add_argument("--json", action="store_true", help="Print raw JSON report to stdout")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress progress logs")
+    parser.add_argument("--multi-page", "-m", action="store_true", help="Audit key high-intent pages (pricing, docs, about) discovered from sitemap")
+    parser.add_argument("--max-pages", type=int, default=5, help="Maximum number of pages to audit in multi-page mode (default: 5)")
 
     args = parser.parse_args()
 
     try:
-        report, ai_score, _ = run_full_audit(args.url, quiet=args.quiet or args.json)
+        report, ai_score, _ = run_full_audit(
+            args.url,
+            quiet=args.quiet or args.json,
+            multi_page=args.multi_page,
+            max_pages=args.max_pages
+        )
 
         if args.json:
             print(json.dumps(report, indent=2))
