@@ -284,7 +284,7 @@ def generate_proactive_recommendations(findings):
 # ---------------------------------------------------------------------------
 
 UTILITY_NOISE_RE = re.compile(
-    r'/(?:privacy|terms|cookie|cookies|legal|disclaimer|login|signin|signup|register|cart|checkout|account|accessibility|license|bugs|compliance|copyright|imprint|report-issue)\b',
+    r'/(?:privacy|terms|cookie|cookies|legal|disclaimer|login|signin|signup|register|cart|checkout|account|accessibility|license|bugs|compliance|copyright|imprint|report-issue|search|find|auth|join|user/create)\b',
     re.IGNORECASE
 )
 STATIC_ASSET_RE = re.compile(
@@ -352,25 +352,30 @@ def _strip_noise_params(url):
 def _get_normalized_cluster(url):
     """
     Normalize a URL to its semantic cluster name.
-    DATE → __archive__, VERSION → use next segment, LOCALE → use next segment.
-    ORDER MATTERS: DATE checked before VERSION.
+    Scans path segments for DATE, VERSION, or LOCALE prefixes.
+    Prevents /releases/1.30 vs /releases/1.28 from being treated as separate clusters.
     """
     path = urlparse(url).path.strip("/")
     parts = [p for p in path.split("/") if p]
     if not parts:
         return "root"
-    first = parts[0]
-    # 1. DATE first (e.g. /2024/01/post → __archive__)
-    if DATE_SEGMENT_RE.match(first):
-        return "__archive__"
-    # 2. VERSION second (e.g. /3/library → cluster=library, /3.8/tutorial → cluster=tutorial)
-    if VERSION_SEGMENT_RE.match(first):
-        return parts[1] if len(parts) > 1 else "__version__"
-    # 3. LOCALE third (e.g. /en/products → cluster=products, /zh-Hans/about → cluster=about)
-    if LOCALE_SEGMENT_RE.match(first):
-        return parts[1] if len(parts) > 1 else "__locale__"
-    # 4. Normal path (e.g. /products → cluster=products)
-    return first
+
+    # 1. Strip locale if present at start
+    if LOCALE_SEGMENT_RE.match(parts[0]):
+        parts = parts[1:]
+        if not parts:
+            return "__locale__"
+
+    # 2. Scan remaining segments for DATE or VERSION
+    for i, p in enumerate(parts):
+        if DATE_SEGMENT_RE.match(p):
+            return "__archive__"
+        if VERSION_SEGMENT_RE.match(p):
+            if i + 1 < len(parts):
+                return parts[i + 1]
+            return f"{parts[0]}__version__" if i > 0 else "__version__"
+
+    return parts[0]
 
 
 def _extract_main_content_links(raw_html, base_url, final_url):
@@ -402,18 +407,23 @@ def _is_tail_duplicate(cand_url, cand_cluster, selected):
     """
     Check if cand_url is a structural sibling of any already-selected URL.
     e.g. /3.7/library vs /3.8/library → same tail 'library' + same cluster → duplicate.
+    e.g. /releases/1.18 vs /releases/1.36 → tails '1.18' & '1.36' both match VERSION → duplicate.
     e.g. /services/cardiology vs /services/orthopedics → different tails → NOT duplicate.
-    Bug Fix (DeepSeek R4): Default empty tail to 'root' to avoid false matches on root URLs.
-    Special case: semantic cluster roots (__version__, __archive__, __locale__) are
-    ALWAYS duplicates with each other — their tail IS the version/date number itself,
-    not a meaningful content segment (e.g. docs.python.org/3.2 vs docs.python.org/3.14).
     """
-    # For semantic roots: any repeat in the same special cluster = duplicate
-    if cand_cluster in ("__version__", "__archive__", "__locale__"):
+    if cand_cluster in ("__version__", "__archive__", "__locale__") or cand_cluster.endswith("__version__") or cand_cluster.endswith("__archive__"):
         return any(s["cluster"] == cand_cluster for s in selected)
-    url_tail = urlparse(cand_url).path.rstrip("/").split("/")[-1] or "root"
+
+    def _get_normalized_tail(url):
+        tail = urlparse(url).path.rstrip("/").split("/")[-1] or "root"
+        if VERSION_SEGMENT_RE.match(tail):
+            return "__version_tail__"
+        if DATE_SEGMENT_RE.match(tail):
+            return "__archive_tail__"
+        return tail.lower()
+
+    cand_tail = _get_normalized_tail(cand_url)
     return any(
-        (urlparse(s["url"]).path.rstrip("/").split("/")[-1] or "root") == url_tail
+        _get_normalized_tail(s["url"]) == cand_tail
         and s["cluster"] == cand_cluster
         for s in selected
     )
