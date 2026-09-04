@@ -284,7 +284,7 @@ def generate_proactive_recommendations(findings):
 # ---------------------------------------------------------------------------
 
 UTILITY_NOISE_RE = re.compile(
-    r'/(?:privacy|terms|cookie|cookies|legal|disclaimer|login|signin|signup|register|cart|checkout|account)\b',
+    r'/(?:privacy|terms|cookie|cookies|legal|disclaimer|login|signin|signup|register|cart|checkout|account|accessibility|license|bugs|compliance|copyright|imprint|report-issue)\b',
     re.IGNORECASE
 )
 STATIC_ASSET_RE = re.compile(
@@ -540,12 +540,11 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
                     raw_u = loc.text.strip()
                     clean_u = _strip_noise_params(raw_u)
                     p = urlparse(clean_u)
-                    clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
                     if (clean_u != norm_target and clean_u != norm_base
                             and clean_u.startswith(norm_base)
-                            and not STATIC_ASSET_RE.search(clean_u)
-                            and not UTILITY_NOISE_RE.search(clean_u)
-                            and not NAMESPACE_COLON_RE.search(p.path)):
+                            and not STATIC_ASSET_RE.search(p.path)
+                            and not UTILITY_NOISE_RE.search(p.path)
+                            and not NAMESPACE_COLON_RE.search(clean_u)):
                         candidate_urls.add(clean_u)
                         count += 1
     except Exception:
@@ -558,22 +557,32 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
             abs_url = urljoin(target_url, h.strip())
             clean_u = _strip_noise_params(abs_url)
             p = urlparse(clean_u)
-            clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
             if (clean_u != norm_base and clean_u != norm_target
                     and clean_u.startswith(norm_base)
-                    and not STATIC_ASSET_RE.search(clean_u)
-                    and not UTILITY_NOISE_RE.search(clean_u)
-                    and not NAMESPACE_COLON_RE.search(p.path)):
+                    and not STATIC_ASSET_RE.search(p.path)
+                    and not UTILITY_NOISE_RE.search(p.path)
+                    and not NAMESPACE_COLON_RE.search(clean_u)):
                 candidate_urls.add(clean_u)
 
     if not candidate_urls:
         return []
 
-    # ── PRE-SCORE FILTER: Remove bare semantic roots ────────────────────────
-    # A URL like docs.python.org/3.9 (no next segment) clusters as __version__
-    # but has NO diagnostic value — it's just a version switcher link.
-    # These are caught by the __version__/__archive__ hard-dedup in selection,
-    # but filtering them here prevents them from consuming the FIRST slot.
+    # ── PRE-SCORE FILTER: Remove bare semantic roots & parameterless stubs ─
+    STUB_PATHS = {'/item', '/view', '/watch', '/product', '/detail', '/index.php', '/w/index.php', '/display', '/show'}
+    BARE_PREFIXES = {'/wiki', '/w', '/docs', '/doc', '/content', '/articles'}
+
+    def _is_invalid_stub_or_bare_directory(url):
+        """True if URL is a parameter-dependent stub with no query or a bare directory prefix."""
+        parsed = urlparse(url)
+        clean_path = parsed.path.rstrip("/")
+        if clean_path in BARE_PREFIXES:
+            return True
+        if clean_path in STUB_PATHS and not parsed.query:
+            return True
+        if clean_path.endswith(('.php', '.asp', '.aspx', '.cgi')) and not parsed.query:
+            return True
+        return False
+
     def _is_bare_semantic_root(url):
         """True if URL is a bare version/date/locale root with no content path."""
         path_parts = [p for p in urlparse(url).path.strip("/").split("/") if p]
@@ -586,7 +595,10 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
                     LOCALE_SEGMENT_RE.match(first))
         return False
 
-    candidate_urls = {u for u in candidate_urls if not _is_bare_semantic_root(u)}
+    candidate_urls = {
+        u for u in candidate_urls 
+        if not _is_bare_semantic_root(u) and not _is_invalid_stub_or_bare_directory(u)
+    }
 
     if not candidate_urls:
         return []
