@@ -191,7 +191,9 @@ def run_live_tests():
 
 if __name__ == "__main__":
     unit = run_unit_tests()
-    live = run_live_tests()
+    live = []
+    if "--live" in sys.argv:
+        live = run_live_tests()
 
     report = {
         "person": "Person 2 - render-extraction-audit",
@@ -204,3 +206,4 @@ if __name__ == "__main__":
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     print(f"\nReport written to {out_path}")
+

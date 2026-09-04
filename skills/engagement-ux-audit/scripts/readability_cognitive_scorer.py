@@ -139,10 +139,27 @@ def calculate_flesch_reading_ease(text):
     return round(flesch_score, 1), total_words, total_sentences, round(avg_words_per_sentence, 1)
 
 
+def _detect_language(raw_html):
+    """
+    Detects declared page language from <html lang="..."> or JSON-LD inLanguage.
+    Returns 2-letter language code string (e.g. 'en', 'ja', 'fr') or 'en' default.
+    """
+    m = re.search(r'<html\s[^>]*lang=["\']([a-zA-Z\-]+)["\']', raw_html, re.IGNORECASE)
+    if not m:
+        m = re.search(r'<meta\s[^>]*http-equiv=["\']content-language["\'][^>]*content=["\']([a-zA-Z\-]+)["\']', raw_html, re.IGNORECASE)
+    if not m:
+        m = re.search(r'"inLanguage"\s*:\s*"([a-zA-Z\-]+)"', raw_html, re.IGNORECASE)
+    if m:
+        return m.group(1).lower().split('-')[0]
+    return "en"
+
+
 def check_cognitive_readability(raw_html, page_url=""):
     findings = []
     if not raw_html:
         return findings
+
+    lang = _detect_language(raw_html)
 
     parser = ReadabilityParser()
     try:
@@ -153,8 +170,8 @@ def check_cognitive_readability(raw_html, page_url=""):
     full_text = parser.get_full_text()
     flesch_score, total_words, total_sentences, avg_words_per_sentence = calculate_flesch_reading_ease(full_text)
 
-    # 1. F-ENG-006: High Cognitive Load / Low Readability Score
-    if total_words >= 80:
+    # 1. F-ENG-006: High Cognitive Load / Low Readability Score (Only calibrated for English)
+    if total_words >= 80 and lang == "en":
         if (flesch_score < 25.0 and avg_words_per_sentence > 18.0) or (flesch_score < 40.0 and avg_words_per_sentence > 23.0):
             findings.append({
                 "id": "F-ENG-006",

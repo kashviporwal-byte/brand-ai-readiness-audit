@@ -315,15 +315,12 @@ def run_unit_tests():
     # Target: above 30% (not High) but below 45% (Medium severity).
     medium_density_html = """<!DOCTYPE html><html lang="en"><head><title>MedCorp</title></head>
     <body><main>
-    <h1>MedCorp Cloud Storage</h1>
-    <p>MedCorp provides object storage with AES-256 encryption and S3-compatible REST API.
-    Plans: 1 TB at $10/month, 10 TB at $80/month, 100 TB enterprise at custom pricing.
-    Available in AWS us-east-1, eu-west-1, and ap-southeast-1 regions. Founded 2020.
-    Serves 500 companies in technology, finance, and healthcare sectors globally.
-    99.99% durability SLA. Maximum object size: 5 TB. Minimum retention: 30 days.
-    Supports multipart uploads, versioning, lifecycle policies, and cross-region replication.</p>
-    <p>We believe teams deserve easy, reliable, and accessible storage without complexity.
-    Our goal is to empower every organization to manage data effortlessly and grow confidently.</p>
+    <p>MedCorp helps people manage their information more easily every single day of the week.
+    We offer plans starting at 1 TB for 10 dollars per month, up to 100 TB for larger teams.
+    Founded 2020, MedCorp now serves about 500 companies who trust us with their daily work.
+    We use AES-256 encryption and a REST API, and we keep 99.99% uptime for everyone who depends on it.
+    Our people care about getting the small details right so that things simply work the way
+    customers expect them to, day after day, without much fuss or drama getting in the way.</p>
     </main></body></html>"""
     f17 = check_information_density(medium_density_html)
     # Target: density is between 30% and 45%, so it should produce Medium severity (not High)

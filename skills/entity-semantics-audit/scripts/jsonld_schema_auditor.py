@@ -149,6 +149,13 @@ def check_jsonld_schema(raw_html, page_url=""):
     if not raw_html:
         return findings
 
+    # ── F-ENT-010: Check FAQ / HowTo schema gap for Q&A content ──────────────
+    # Runs unconditionally, before the zero-schema early return below, so it fires
+    # on pages with ZERO structured data (the common case) as well as pages with
+    # partial schema. Previously this call sat after the early return and was
+    # unreachable for any page lacking an entity schema.
+    findings.extend(check_faq_howto_schema_gap(raw_html, page_url))
+
     # ── Step 1: Extract all JSON-LD blocks ──────────────────────────────────
     extractor = JSONLDExtractor()
     try:
@@ -339,3 +346,67 @@ def check_jsonld_schema(raw_html, page_url=""):
         })
 
     return findings
+
+
+def check_faq_howto_schema_gap(raw_html, page_url=""):
+    """
+    F-ENT-010: Missing FAQPage / HowTo / Speakable Schema markup despite presence of Q&A content.
+    """
+    if not raw_html:
+        return []
+
+    question_headings = re.findall(
+        r'<h[23]\b[^>]*>(?:\s*<[^>]+>)*\s*([^<]*?\b(?:what|how|why|when|where|who|can|does|is|are)\b[^<]*?\?)\s*(?:<[^>]+>\s*)*</h[23]>',
+        raw_html, re.IGNORECASE
+    )
+
+    if len(question_headings) < 2:
+        return []
+
+    extractor = JSONLDExtractor()
+    try:
+        extractor.feed(raw_html)
+    except Exception:
+        pass
+
+    has_faq_howto = False
+    for raw_block in extractor.raw_blocks:
+        cleaned = _clean_jsonld_raw_block(raw_block)
+        if "FAQPage" in cleaned or "HowTo" in cleaned or "Speakable" in cleaned or "Question" in cleaned:
+            has_faq_howto = True
+            break
+
+    if not has_faq_howto:
+        sample_q = question_headings[0].strip()
+        return [{
+            "id": "F-ENT-010",
+            "skill_id": "entity-semantics-audit",
+            "title": f"FAQ/Q&A content present ({len(question_headings)} questions detected) but lacks FAQPage Schema.org markup",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": f"Found {len(question_headings)} question headings on page (e.g. '{sample_q}'), but no FAQPage or HowTo JSON-LD schema block was detected.",
+            "suggested_action": {
+                "summary": "Wrap Q&A section content in a Schema.org FAQPage or HowTo JSON-LD block.",
+                "priority": "medium",
+                "rationale": "AI answer engines (ChatGPT, Claude, Perplexity) directly parse FAQPage JSON-LD to generate instant direct-answer citations. Unstructured Q&A text carries higher extraction risk.",
+                "code_fix_example": (
+                    '<script type="application/ld+json">\n'
+                    '{\n'
+                    '  "@context": "https://schema.org",\n'
+                    '  "@type": "FAQPage",\n'
+                    '  "mainEntity": [{\n'
+                    '    "@type": "Question",\n'
+                    '    "name": "' + sample_q.replace('"', '\\"') + '",\n'
+                    '    "acceptedAnswer": {\n'
+                    '      "@type": "Answer",\n'
+                    '      "text": "Provide clear, factual 2-sentence answer here."\n'
+                    '    }\n'
+                    '  }]\n'
+                    '}\n'
+                    '</script>'
+                )
+            }
+        }]
+
+    return []
+

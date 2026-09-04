@@ -337,3 +337,66 @@ def check_locale_audience(raw_html, page_url=""):
             })
 
     return findings
+
+
+def check_hreflang_reciprocity(crawled_pages):
+    """
+    F-ENT-011: Broken hreflang Symmetrical Reciprocity Validation.
+    Checks that alternate language pages link back symmetrically to the primary target page.
+    """
+    findings = []
+    if not crawled_pages or len(crawled_pages) < 2:
+        return findings
+
+    primary_url = crawled_pages[0].get("url", "")
+    primary_html = crawled_pages[0].get("raw_html", "")
+    if not primary_url or not primary_html:
+        return findings
+
+    parser_p = LocaleParser()
+    try:
+        parser_p.feed(primary_html)
+    except Exception:
+        pass
+
+    primary_hreflangs = {tag["href"].rstrip("/"): tag["hreflang"] for tag in parser_p.hreflang_tags if tag.get("href")}
+    if not primary_hreflangs:
+        return findings
+
+    unreciprocated = []
+    for page in crawled_pages[1:]:
+        sec_url = page.get("url", "").rstrip("/")
+        sec_html = page.get("raw_html", "")
+        if sec_url in primary_hreflangs and sec_html:
+            parser_s = LocaleParser()
+            try:
+                parser_s.feed(sec_html)
+            except Exception:
+                pass
+            sec_hrefs = {tag["href"].rstrip("/") for tag in parser_s.hreflang_tags if tag.get("href")}
+            if primary_url.rstrip("/") not in sec_hrefs:
+                unreciprocated.append((sec_url, primary_hreflangs[sec_url]))
+
+    if unreciprocated:
+        sample_url, sample_lang = unreciprocated[0]
+        findings.append({
+            "id": "F-ENT-011",
+            "skill_id": "entity-semantics-audit",
+            "title": "Broken hreflang reciprocity: alternate language pages fail to link back to primary page",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": f"Primary page '{primary_url}' declares alternate hreflang='{sample_lang}' pointing to '{sample_url}', but '{sample_url}' does not contain a return hreflang link to '{primary_url}'. Broken reciprocity causes search engines and AI crawlers to ignore regional declarations.",
+            "suggested_action": {
+                "summary": "Ensure all hreflang alternate URL declarations are bidirectionally reciprocal across all language variants.",
+                "priority": "medium",
+                "rationale": "Google and AI indexing systems strictly discard asymmetric hreflang tags to prevent cross-domain canonical hijacking.",
+                "code_fix_example": (
+                    '<!-- On ' + sample_url + ': -->\n'
+                    '<link rel="alternate" hreflang="x-default" href="' + primary_url + '" />\n'
+                    '<link rel="alternate" hreflang="en" href="' + primary_url + '" />'
+                )
+            }
+        })
+
+    return findings
+

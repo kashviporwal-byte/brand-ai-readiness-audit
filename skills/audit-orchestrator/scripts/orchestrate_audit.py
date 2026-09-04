@@ -28,8 +28,10 @@ import time
 import argparse
 import importlib.util
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 import urllib.request
 import urllib.error
+import urllib.robotparser
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -145,7 +147,11 @@ def discover_available_skills():
 def fetch_target_page(target_url, timeout=10.0):
     """
     Fetches the target webpage politely or reads from a local file.
-    Returns a dict with 'raw_html', 'status_code', 'fetch_time', 'headers'.
+    Policy Rationale:
+        Primary target URL is user-directed; robots.txt signal is surfaced as
+        evidence (F-CRAWL-013) rather than blocking the user-requested initial fetch.
+        Secondary multi-page crawling strictly enforces can_fetch() gating.
+    Returns a dict with 'raw_html', 'status_code', 'fetch_time', 'headers', 'robots_disallowed'.
     """
     t0 = time.time()
 
@@ -158,13 +164,29 @@ def fetch_target_page(target_url, timeout=10.0):
             "raw_html": content,
             "status_code": 200,
             "fetch_time": round(time.time() - t0, 3),
-            "headers": {"content-type": "text/html"}
+            "headers": {"content-type": "text/html"},
+            "robots_disallowed": False
         }
 
     # Ensure URL has protocol
     normalized_url = target_url
     if not re.match(r'^https?://', normalized_url, re.IGNORECASE):
         normalized_url = f"https://{normalized_url}"
+
+    # Lightweight robots.txt check for primary URL
+    robots_disallowed = False
+    try:
+        parsed = urlparse(normalized_url)
+        robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+        rp = urllib.robotparser.RobotFileParser()
+        req_r = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
+        with urllib.request.urlopen(req_r, timeout=3.0) as resp_r:
+            r_content = resp_r.read().decode("utf-8", errors="replace")
+            rp.parse(r_content.splitlines())
+            if not rp.can_fetch(DEFAULT_USER_AGENT, normalized_url):
+                robots_disallowed = True
+    except Exception:
+        robots_disallowed = False
 
     headers = {"User-Agent": DEFAULT_USER_AGENT, "Accept": "text/html,application/xhtml+xml"}
     req = urllib.request.Request(normalized_url, headers=headers)
@@ -179,7 +201,8 @@ def fetch_target_page(target_url, timeout=10.0):
                 "raw_html": raw_html,
                 "status_code": response.status,
                 "fetch_time": round(time.time() - t0, 3),
-                "headers": dict(response.headers)
+                "headers": dict(response.headers),
+                "robots_disallowed": robots_disallowed
             }
     except urllib.error.HTTPError as e:
         raw_bytes = e.read()
@@ -189,7 +212,8 @@ def fetch_target_page(target_url, timeout=10.0):
             "raw_html": raw_html,
             "status_code": e.code,
             "fetch_time": round(time.time() - t0, 3),
-            "headers": dict(e.headers) if hasattr(e, "headers") else {}
+            "headers": dict(e.headers) if hasattr(e, "headers") else {},
+            "robots_disallowed": robots_disallowed
         }
     except Exception as e:
         raise RuntimeError(f"Network error fetching {normalized_url}: {e}")
@@ -234,17 +258,33 @@ def execute_skill(skill, site_context, target_url):
         }
 
 
-def calculate_ai_readiness_score(tallies):
+def calculate_ai_readiness_score(tallies, findings=None):
     """
-    Computes an overall AI Readiness Score from 0 to 100 based on weighted defect severity.
+    Computes an overall AI Readiness Score (0-100) and returns (score, score_narrative).
     """
     critical_penalty = tallies.get("critical", 0) * 25
     high_penalty = tallies.get("high", 0) * 10
     medium_penalty = tallies.get("medium", 0) * 4
     low_penalty = tallies.get("low", 0) * 1
 
-    score = 100 - (critical_penalty + high_penalty + medium_penalty + low_penalty)
-    return max(0, min(100, score))
+    raw_score = 100 - (critical_penalty + high_penalty + medium_penalty + low_penalty)
+    score = max(0, min(100, raw_score))
+
+    if not findings:
+        return score, f"Score {score}/100: Flawless AI readiness with zero detected defects."
+
+    # Group findings by skill to identify main score drivers
+    skill_counts = {}
+    for f in findings:
+        sk = f.get("skill_id", "general")
+        skill_counts[sk] = skill_counts.get(sk, 0) + 1
+
+    top_skills = sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:2]
+    drivers = [f"{count} finding(s) in {sk}" for sk, count in top_skills]
+    driver_str = ", ".join(drivers) if drivers else "all audit checks"
+
+    narrative = f"Score {score}/100: Driven primarily by {driver_str}."
+    return score, narrative
 
 
 def generate_proactive_recommendations(findings):
@@ -378,9 +418,36 @@ def _get_normalized_cluster(url):
     return parts[0]
 
 
+class TagRegionExtractor(HTMLParser):
+    """
+    Parses HTML with exact tag-depth tracking and HTML comment exclusion
+    to extract href links inside specified target region tags (e.g. nav, header, main, article).
+    """
+    def __init__(self, target_tags):
+        super().__init__()
+        self.target_tags = frozenset(t.lower() for t in target_tags)
+        self.depth = 0
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        t_lower = tag.lower()
+        if t_lower in self.target_tags:
+            self.depth += 1
+        elif self.depth > 0 and t_lower == "a":
+            for k, v in attrs:
+                if k.lower() == "href" and v:
+                    self.links.append(v.strip())
+                    break
+
+    def handle_endtag(self, tag):
+        t_lower = tag.lower()
+        if t_lower in self.target_tags and self.depth > 0:
+            self.depth -= 1
+
+
 def _extract_main_content_links(raw_html, base_url, final_url):
     """
-    Extract links from inside <main> or <article> tags.
+    Extract links from inside <main> or <article> tags using depth tracking parser.
     These get a +3.0 relevance boost in scoring.
     Kills Wikipedia sidebar noise generically — no site-specific rules needed.
     """
@@ -388,18 +455,18 @@ def _extract_main_content_links(raw_html, base_url, final_url):
     if not raw_html:
         return main_links
     norm_base = base_url.rstrip("/")
-    main_blocks = re.findall(
-        r'<(?:main|article)\b[^>]*>(.*?)</(?:main|article)>',
-        raw_html, re.IGNORECASE | re.DOTALL
-    )
-    for block in main_blocks:
-        hrefs = re.findall(r'<a\s+[^>]*href=["\']([^"\']+)["\']', block, re.IGNORECASE)
-        for h in hrefs:
-            abs_u = urljoin(final_url, h.strip())
-            p = urlparse(abs_u)
-            clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
-            if clean_u.startswith(norm_base) and not STATIC_ASSET_RE.search(clean_u):
-                main_links.add(clean_u)
+    parser = TagRegionExtractor({"main", "article"})
+    try:
+        parser.feed(raw_html)
+    except Exception:
+        pass
+
+    for h in parser.links:
+        abs_u = urljoin(final_url, h)
+        p = urlparse(abs_u)
+        clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+        if clean_u.startswith(norm_base) and not STATIC_ASSET_RE.search(clean_u):
+            main_links.add(clean_u)
     return main_links
 
 
@@ -431,7 +498,7 @@ def _is_tail_duplicate(cand_url, cand_cluster, selected):
 
 def extract_navigation_links(raw_html, base_url, final_url):
     """
-    Extracts high-priority internal links from primary <header> and <nav> regions.
+    Extracts high-priority internal links from primary <header> and <nav> regions using HTMLParser depth tracking.
     Limits to the first 35 links to avoid giant footer mega-menu dilution.
     """
     if not raw_html:
@@ -439,18 +506,21 @@ def extract_navigation_links(raw_html, base_url, final_url):
     nav_links = set()
     norm_base = base_url.rstrip("/")
     norm_target = final_url.rstrip("/")
-    nav_blocks = re.findall(r'<(?:nav|header)\b[^>]*>(.*?)</(?:nav|header)>', raw_html, re.IGNORECASE | re.DOTALL)
-    for block in nav_blocks:
-        hrefs = re.findall(r'<a\s+[^>]*href=["\']([^"\']+)["\']', block, re.IGNORECASE)
-        for h in hrefs[:35]:
-            abs_u = urljoin(final_url, h.strip())
-            p = urlparse(abs_u)
-            clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
-            if clean_u != norm_base and clean_u != norm_target and clean_u.startswith(norm_base):
-                if (not STATIC_ASSET_RE.search(clean_u)
-                        and not UTILITY_NOISE_RE.search(clean_u)
-                        and not NAMESPACE_COLON_RE.search(p.path)):
-                    nav_links.add(clean_u)
+    parser = TagRegionExtractor({"nav", "header"})
+    try:
+        parser.feed(raw_html)
+    except Exception:
+        pass
+
+    for h in parser.links[:35]:
+        abs_u = urljoin(final_url, h)
+        p = urlparse(abs_u)
+        clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+        if clean_u != norm_base and clean_u != norm_target and clean_u.startswith(norm_base):
+            if (not STATIC_ASSET_RE.search(clean_u)
+                    and not UTILITY_NOISE_RE.search(clean_u)
+                    and not NAMESPACE_COLON_RE.search(p.path)):
+                nav_links.add(clean_u)
     return nav_links
 
 
@@ -493,13 +563,17 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
     # ── SIGNAL SOURCE D: Main content links (for +3 relevance boost) ───────
     main_links = _extract_main_content_links(raw_html, base_url, target_url)
 
-    # ── SIGNAL SOURCE B: Sitemap discovery ─────────────────────────────────
+    # ── SIGNAL SOURCE B: Sitemap & Robots.txt Enforcement ────────────────────
     sitemap_url = urljoin(base_url, "sitemap.xml")
     robots_url = urljoin(base_url, "robots.txt")
+    robot_parser = urllib.robotparser.RobotFileParser()
+    has_robot_rules = False
     try:
         req = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
         with urllib.request.urlopen(req, timeout=3) as resp:
             content = resp.read().decode("utf-8", errors="replace")
+            robot_parser.parse(content.splitlines())
+            has_robot_rules = True
             for line in content.splitlines():
                 line_str = line.strip()
                 if line_str.lower().startswith("sitemap:"):
@@ -509,7 +583,7 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
                             else urljoin(base_url, declared.lstrip("/"))
                         break
     except Exception:
-        pass
+        has_robot_rules = False
 
     candidate_urls = set(nav_links)
 
@@ -608,6 +682,7 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
     candidate_urls = {
         u for u in candidate_urls 
         if not _is_bare_semantic_root(u) and not _is_invalid_stub_or_bare_directory(u)
+        and (not has_robot_rules or robot_parser.can_fetch(DEFAULT_USER_AGENT, u))
     }
 
     if not candidate_urls:
@@ -741,7 +816,8 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
         "crawled_pages": crawled_pages,
         "status_code": page_data["status_code"],
         "fetch_time": page_data["fetch_time"],
-        "headers": page_data["headers"]
+        "headers": page_data["headers"],
+        "robots_disallowed": page_data.get("robots_disallowed", False)
     }
 
     # 3. Fan out to active skills in parallel for primary page
@@ -754,7 +830,7 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
 
     with ThreadPoolExecutor(max_workers=min(len(active_skills) or 1, 5)) as executor:
         future_to_skill = {
-            executor.submit(execute_skill, skill, site_context, final_url): skill
+            executor.submit(execute_skill, skill, site_context.copy(), final_url): skill
             for skill in active_skills
         }
         for future in as_completed(future_to_skill):
@@ -785,7 +861,7 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
                 "headers": {}
             }
             with ThreadPoolExecutor(max_workers=min(len(page_level_skills) or 1, 3)) as executor:
-                futures = [executor.submit(execute_skill, skill, sec_ctx, sec_url) for skill in page_level_skills]
+                futures = [executor.submit(execute_skill, skill, sec_ctx.copy(), sec_url) for skill in page_level_skills]
                 for f in as_completed(futures):
                     res = f.result()
                     if not res["error"]:
@@ -817,20 +893,40 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
         "low": sum(1 for f in unique_findings if f.get("severity") == "low"),
     }
 
-    ai_score = calculate_ai_readiness_score(tallies)
+    ai_score, ai_score_narrative = calculate_ai_readiness_score(tallies, unique_findings)
 
     # 6. Generate proactive recommendations
     recs = generate_proactive_recommendations(unique_findings)
 
     # 7. Construct final JSON report adhering strictly to report_schema.json
     pages_list = [p["url"] for p in crawled_pages]
+    pages_summary = []
+    if len(pages_list) > 1:
+        for p_url in pages_list:
+            p_findings = [f for f in unique_findings if f.get("page_url") == p_url]
+            p_tallies = {
+                "total_findings": len(p_findings),
+                "critical": sum(1 for f in p_findings if f.get("severity") == "critical"),
+                "high": sum(1 for f in p_findings if f.get("severity") == "high"),
+                "medium": sum(1 for f in p_findings if f.get("severity") == "medium"),
+                "low": sum(1 for f in p_findings if f.get("severity") == "low"),
+            }
+            p_score, _ = calculate_ai_readiness_score(p_tallies, p_findings)
+            pages_summary.append({
+                "url": p_url,
+                "score": p_score,
+                "summary": p_tallies
+            })
+
     crawl_mode_str = "multi-page" if (multi_page and len(pages_list) > 1) else "single-page"
     report = {
         "site": final_url,
         "audited_at": datetime.now(timezone.utc).isoformat(),
         "crawl_mode": crawl_mode_str,
         "pages_audited": pages_list,
+        "pages_summary": pages_summary,
         "total_pages": len(pages_list),
+        "ai_score_narrative": ai_score_narrative,
         "summary": tallies,
         "findings": unique_findings,
         "proactive_recommendations": recs
@@ -851,6 +947,8 @@ def print_terminal_dashboard(report, ai_score):
     print("\n" + "=" * 72)
     print(f"  AI READINESS AUDIT REPORT: {site}")
     print(f"  Audited At: {report['audited_at']} | Overall AI Score: {ai_score}/100")
+    if report.get("ai_score_narrative"):
+        print(f"  Diagnosis: {report['ai_score_narrative']}")
     if total_pages > 1:
         print(f"  Scope: Multi-Page Site Audit ({total_pages} pages audited via sitemap traversal)")
     print(f"  Summary: {summary['total_findings']} issue(s) detected "

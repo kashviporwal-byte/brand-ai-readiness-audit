@@ -24,7 +24,7 @@ if _SCRIPT_DIR not in sys.path:
 from jsonld_schema_auditor       import check_jsonld_schema
 from sameas_disambiguator        import check_sameas_disambiguation
 from quotable_definition_checker import check_quotable_definition
-from locale_audience_auditor     import check_locale_audience
+from locale_audience_auditor     import check_locale_audience, check_hreflang_reciprocity
 
 
 def audit_entity_semantics(site_context_or_html, page_url=""):
@@ -47,6 +47,7 @@ def audit_entity_semantics(site_context_or_html, page_url=""):
     """
     raw_html   = ""
     target_url = page_url
+    crawled_pages = []
 
     if isinstance(site_context_or_html, dict):
         target_url = (
@@ -55,11 +56,10 @@ def audit_entity_semantics(site_context_or_html, page_url=""):
             or page_url
         )
         raw_html = site_context_or_html.get("raw_html", "")
+        crawled_pages = site_context_or_html.get("crawled_pages", [])
         # Support orchestrator SiteContext with crawled_pages list
-        if not raw_html and "crawled_pages" in site_context_or_html:
-            pages = site_context_or_html["crawled_pages"]
-            if pages and isinstance(pages, list):
-                raw_html = pages[0].get("raw_html", "")
+        if not raw_html and crawled_pages and isinstance(crawled_pages, list):
+            raw_html = crawled_pages[0].get("raw_html", "")
 
     elif isinstance(site_context_or_html, str):
         raw_html = site_context_or_html
@@ -68,11 +68,13 @@ def audit_entity_semantics(site_context_or_html, page_url=""):
     if not raw_html:
         return findings
 
-    # ── Fan out to all four subskill checkers ────────────────────────────────
+    # ── Fan out to all subskill checkers ───────────────────────────────────
     findings.extend(check_jsonld_schema(raw_html, target_url))           # 3.1
     findings.extend(check_sameas_disambiguation(raw_html, target_url))   # 3.2
     findings.extend(check_quotable_definition(raw_html, target_url))     # 3.3
     findings.extend(check_locale_audience(raw_html, target_url))         # 3.4
+    if crawled_pages:
+        findings.extend(check_hreflang_reciprocity(crawled_pages))
 
     return findings
 

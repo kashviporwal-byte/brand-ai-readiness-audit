@@ -70,6 +70,16 @@ def run_unit_tests():
     f_t1 = check_robots_txt(t1_block_robots, "https://example.com")
     check("tier1_ai_bot_block_f_crawl_002", any(f["id"] == "F-CRAWL-002" and f["severity"] == "critical" for f in f_t1), f"expected F-CRAWL-002; got {[f['id'] for f in f_t1]}")
 
+    # 3b. Multi-agent grouped robots.txt block -> F-CRAWL-002 catches BOTH GPTBot and ClaudeBot
+    multi_agent_robots = """
+    User-agent: GPTBot
+    User-agent: ClaudeBot
+    Disallow: /
+    Sitemap: https://example.com/sitemap.xml
+    """
+    f_multi = check_robots_txt(multi_agent_robots, "https://example.com")
+    check("multi_agent_robots_grouping_f_crawl_002", any("gptbot" in f.get("evidence", "").lower() and "claudebot" in f.get("evidence", "").lower() for f in f_multi), f"expected both gptbot and claudebot in evidence; got {[f.get('evidence') for f in f_multi]}")
+
     # 4. Tier-2 AI crawler block -> F-CRAWL-003
     t2_block_robots = """
     User-agent: Google-Extended

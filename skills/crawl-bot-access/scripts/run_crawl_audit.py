@@ -16,7 +16,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from robots_txt_checker import check_robots_txt
+from robots_txt_checker import check_robots_txt, check_target_url_robots_disallowed
 from http_header_auditor import check_http_headers_and_meta
 from sitemap_auditor import audit_sitemap_content
 from llms_txt_checker import check_llms_txt
@@ -54,10 +54,12 @@ def audit_crawl_bot_access(site_context_or_url, page_url=""):
     raw_html = ""
     http_headers = {}
 
+    robots_disallowed = False
     if isinstance(site_context_or_url, dict):
         target_url = site_context_or_url.get("target_url", "") or page_url
         raw_html = site_context_or_url.get("raw_html", "")
         http_headers = site_context_or_url.get("http_headers", {})
+        robots_disallowed = site_context_or_url.get("robots_disallowed", False)
     elif isinstance(site_context_or_url, str):
         if site_context_or_url.startswith(("http://", "https://")):
             target_url = site_context_or_url
@@ -67,6 +69,9 @@ def audit_crawl_bot_access(site_context_or_url, page_url=""):
 
     if not target_url:
         return findings
+
+    if robots_disallowed:
+        findings.extend(check_target_url_robots_disallowed(target_url, True))
 
     parsed = urlparse(target_url)
     base_url = f"{parsed.scheme}://{parsed.netloc}/"

@@ -16,6 +16,7 @@ if script_dir not in sys.path:
 from dom_hydrator_diff import check_hydration_gap
 from non_text_auditor import check_non_text_elements
 from semantic_html_checker import check_semantic_hierarchy
+from ua_cloaking_auditor import check_ua_cloaking
 
 
 def audit_render_extraction(site_context_or_html, page_url=""):
@@ -40,10 +41,11 @@ def audit_render_extraction(site_context_or_html, page_url=""):
     if not raw_html:
         return findings
 
-    # Execute all 4 subskills in memory
+    # Execute all subskills in memory
     findings.extend(check_hydration_gap(raw_html, target_url))
     findings.extend(check_non_text_elements(raw_html, target_url))
     findings.extend(check_semantic_hierarchy(raw_html, target_url))
+    findings.extend(check_ua_cloaking(target_url, raw_html))
 
     return findings
 

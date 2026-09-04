@@ -64,3 +64,5 @@ Returns a structured JSON array of findings. Each finding strictly includes:
 | **`F-FRSH-005`** | `Medium` | Uncorroborated Single-Source Claim with High Hallucination Risk | Subskill 4.2 (`cross_web_corroborator.py`) |
 | **`F-FRSH-006`** | `High` / `Medium` | Low Information Density (< 30% / 30%–45% Substance-to-Noise Ratio) | Subskill 4.3 (`information_density_evaluator.py`) |
 | **`F-FRSH-007`** | `Medium` | Excessive Buzzword Dilution Failing Appendix F Summarization Resilience | Subskill 4.3 (`information_density_evaluator.py`) |
+| **`F-FRSH-008`** | `Low` | Long-form content (>800 words) lacks a visible TL;DR or Key Takeaways summary block | Subskill 4.3 (`information_density_evaluator.py`) |
+

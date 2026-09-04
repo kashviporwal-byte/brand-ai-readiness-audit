@@ -25,6 +25,7 @@ def check_robots_txt(robots_content, base_url=""):
     groups = []
     current_agents = set()
     current_disallows = set()
+    in_directive_block = False
 
     for line in robots_content.splitlines():
         line = line.strip()
@@ -35,15 +36,21 @@ def check_robots_txt(robots_content, base_url=""):
         if lower_line.startswith("sitemap:"):
             sitemap_declared = True
         elif lower_line.startswith("user-agent:"):
-            if current_agents or current_disallows:
-                groups.append((current_agents, current_disallows))
-            current_agents = {line.split(":", 1)[1].strip().lower()}
-            current_disallows = set()
-        elif lower_line.startswith("disallow:"):
-            path = line.split(":", 1)[1].strip()
-            current_disallows.add(path)
+            agent_name = line.split(":", 1)[1].strip().lower()
+            if in_directive_block:
+                if current_agents:
+                    groups.append((current_agents, current_disallows))
+                current_agents = set()
+                current_disallows = set()
+                in_directive_block = False
+            current_agents.add(agent_name)
+        elif lower_line.startswith("disallow:") or lower_line.startswith("allow:"):
+            in_directive_block = True
+            if lower_line.startswith("disallow:"):
+                path = line.split(":", 1)[1].strip()
+                current_disallows.add(path)
 
-    if current_agents or current_disallows:
+    if current_agents:
         groups.append((current_agents, current_disallows))
 
     blocked_t1 = set()
@@ -136,4 +143,54 @@ def check_robots_txt(robots_content, base_url=""):
             }
         })
 
+    # 5. F-CRAWL-014: Crawl-delay / Rate-limit directive check
+    crawl_delay_val = None
+    for line in (robots_content or "").splitlines():
+        line = line.strip().lower()
+        if line.startswith("crawl-delay:"):
+            try:
+                crawl_delay_val = float(line.split(":", 1)[1].strip())
+                break
+            except ValueError:
+                pass
+
+    if crawl_delay_val is not None and crawl_delay_val > 10:
+        findings.append({
+            "id": "F-CRAWL-014",
+            "skill_id": "crawl-bot-access",
+            "title": f"Excessive Crawl-delay directive ({crawl_delay_val:.0f}s) in robots.txt",
+            "severity": "medium",
+            "impact_area": "crawl_accessibility",
+            "evidence": f"Found 'Crawl-delay: {crawl_delay_val:.0f}' in robots.txt. Crawl delays exceeding 10 seconds cause AI search bots to timeout or de-index content.",
+            "suggested_action": {
+                "summary": "Reduce Crawl-delay in robots.txt to <= 2 seconds for search crawlers.",
+                "priority": "medium",
+                "rationale": "High crawl delays prevent real-time search crawlers from fetching fresh content updates during user queries.",
+                "code_fix_example": "User-agent: *\nCrawl-delay: 1"
+            }
+        })
+
     return findings
+
+
+def check_target_url_robots_disallowed(target_url, is_disallowed=False):
+    """
+    F-CRAWL-013: Audited Primary URL Disallowed by robots.txt.
+    """
+    if not is_disallowed:
+        return []
+    return [{
+        "id": "F-CRAWL-013",
+        "skill_id": "crawl-bot-access",
+        "title": "Audited primary URL is explicitly disallowed by robots.txt for AI crawlers",
+        "severity": "medium",
+        "impact_area": "crawl_accessibility",
+        "evidence": f"Target URL '{target_url}' is matched by a Disallow rule in robots.txt. Note: Primary URL fetch was executed per user-directed audit request, but live AI bots will honor the Disallow directive and omit this page.",
+        "suggested_action": {
+            "summary": "Remove Disallow directive covering the primary target URL in robots.txt if AI indexing is desired.",
+            "priority": "medium",
+            "rationale": "AI bots (GPTBot, ClaudeBot, PerplexityBot) respect robots.txt rules and will skip fetching disallowed URLs.",
+            "code_fix_example": f"# In robots.txt:\nAllow: {target_url}"
+        }
+    }]
+

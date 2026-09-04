@@ -86,11 +86,11 @@ _PRICE_VALUE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Plan tier name patterns
+# Plan tier name patterns (requires explicit pricing plan/tier suffix or compound pricing term)
 _PRICING_TIER_RE = re.compile(
-    r"\b(?:free\s+(?:plan|tier)|starter|basic|essentials?|pro|"
-    r"growth|business|professional|team|enterprise|plus|premium|"
-    r"unlimited|ultimate|advanced)\s*(?:plan|tier|edition)?\b",
+    r"\b(?:free\s+(?:plan|tier|edition|package)|"
+    r"(?:starter|basic|essentials?|pro|growth|business|professional|team|enterprise|plus|premium|unlimited|ultimate|advanced)\s+(?:plan|tier|edition|package|subscription)|"
+    r"pay-as-you-go|freemium)\b",
     re.IGNORECASE,
 )
 
@@ -305,8 +305,33 @@ def _parse_jsonld_claims(raw_blocks):
 # CLAIM EXTRACTION FROM VISIBLE TEXT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _extract_text_claims(visible_text):
-    """Extracts founding year, leadership, HQ, pricing, and high-risk claims from visible text."""
+def _is_subject_bound(match_start, visible_text, brand_name=""):
+    """
+    Checks if a text match occurs near brand name or first-person possessives.
+    Excludes third-party entity qualifiers (e.g. 'our vendor', 'our partner', 'our consulting firm', 'our client').
+    """
+    start = max(0, match_start - 120)
+    end = min(len(visible_text), match_start + 120)
+    window = visible_text[start:end].lower()
+
+    # Rule out third-party entity qualifiers
+    third_party_qualifiers = [
+        "our vendor", "our partner", "our supplier", "our client",
+        "our consulting", "our agency", "our previous", "our former",
+        "other company", "another firm", "our own consulting"
+    ]
+    if any(tp in window for tp in third_party_qualifiers):
+        return False
+
+    if any(p in window for p in ["our", "we", "us", "about us", "company", "headquarters"]):
+        return True
+    if brand_name and brand_name.lower() in window:
+        return True
+    return False
+
+
+def _extract_text_claims(visible_text, brand_name=""):
+    """Extracts founding year, leadership, HQ, pricing, and high-risk claims with subject binding."""
     claims = {
         "founding_year":    None,
         "ceo_names":        [],
@@ -316,23 +341,25 @@ def _extract_text_claims(visible_text):
         "price_values":     [],
     }
 
-    fy = _FOUNDING_YEAR_TEXT_RE.search(visible_text)
-    if fy:
-        claims["founding_year"] = fy.group(1)
+    for fy in _FOUNDING_YEAR_TEXT_RE.finditer(visible_text):
+        if _is_subject_bound(fy.start(), visible_text, brand_name):
+            claims["founding_year"] = fy.group(1)
+            break
 
     for m in _LEADERSHIP_TEXT_RE.finditer(visible_text):
         name = m.group(1).strip()
-        if len(name.split()) <= 4:
+        if len(name.split()) <= 4 and _is_subject_bound(m.start(), visible_text, brand_name):
             claims["ceo_names"].append(name)
 
     hq = _HQ_TEXT_RE.search(visible_text)
-    if hq:
+    if hq and _is_subject_bound(hq.start(), visible_text, brand_name):
         claims["hq_text"] = hq.group(1).strip().rstrip(",.")
 
     for p in _HIGH_RISK_CLAIM_PATTERNS:
         for m in p.finditer(visible_text):
-            snippet = visible_text[max(0, m.start() - 20): m.end() + 40].strip()
-            claims["high_risk_claims"].append(snippet)
+            if _is_subject_bound(m.start(), visible_text, brand_name):
+                snippet = visible_text[max(0, m.start() - 20): m.end() + 40].strip()
+                claims["high_risk_claims"].append(snippet)
 
     claims["pricing_tiers"] = [m.group(0) for m in _PRICING_TIER_RE.finditer(visible_text)]
     claims["price_values"]  = [m.group(0) for m in _PRICE_VALUE_RE.finditer(visible_text)]
@@ -573,15 +600,38 @@ def _apply_two_source_consensus(page_claims, text_claims,
     """
     findings = []
 
-    # Resolve on-page founding year (JSON-LD preferred, text fallback)
-    page_founding = page_claims.get("founding_year") or text_claims.get("founding_year")
+    # Sanity-check resolved Wikidata entity label against on-page org_name
+    org_name = page_claims.get("org_name", "")
+    wd_label = wikidata_facts.get("label", "")
+    wd_valid_entity = True
+    if org_name and wd_label:
+        import difflib
+        ratio = difflib.SequenceMatcher(None, org_name.lower(), wd_label.lower()).ratio()
+        if ratio < 0.35 and org_name.lower() not in wd_label.lower() and wd_label.lower() not in org_name.lower():
+            wd_valid_entity = False
+            findings.append(_make_finding(
+                rule_id="F-FRSH-005",
+                title=f"sameAs link points to a mismatched Wikidata entity ('{wd_label}' vs '{org_name}')",
+                severity="medium",
+                evidence=f"JSON-LD sameAs points to Wikidata entity '{wd_label}', which has low similarity to declared brand name '{org_name}'. External facts from this entity were suppressed to prevent hallucination.",
+                summary="Verify sameAs link targets the correct Wikidata QID for your brand.",
+                priority="medium",
+                rationale="Mismatched sameAs links confuse AI knowledge graphs and cause AI assistants to attribute competitor facts to your brand.",
+                code_fix=f'"sameAs": ["https://www.wikidata.org/wiki/QXXXXX"]  // Verify QID for {org_name}'
+            ))
 
-    wd_founding  = wikidata_facts.get("founding_year")
-    wp_founding  = wikipedia_facts.get("founding_year")
-    wd_ceo       = wikidata_facts.get("ceo_name")
-    wp_ceo       = wikipedia_facts.get("ceo_name")
-    wd_hq        = wikidata_facts.get("hq_city")
-    wp_hq        = wikipedia_facts.get("hq_city")
+    # Extract claim variables for consensus matching
+    page_founding = page_claims.get("founding_year") or text_claims.get("founding_year")
+    wd_founding = wikidata_facts.get("founding_year") if wd_valid_entity else None
+    wp_founding = wikipedia_facts.get("founding_year")
+
+    page_ceo = (page_claims.get("founder_names") or [None])[0] if page_claims.get("founder_names") else (text_claims.get("ceo_names") or [None])[0]
+    wd_ceo = wikidata_facts.get("ceo_name") if wd_valid_entity else None
+    wp_ceo = wikipedia_facts.get("ceo_name")
+
+    page_hq = page_claims.get("address_locality") or text_claims.get("hq_text")
+    wd_hq = wikidata_facts.get("hq_city") if wd_valid_entity else None
+    wp_hq = wikipedia_facts.get("hq_city")
 
     # ── Founding year conflict ────────────────────────────────────────────────
     if page_founding:

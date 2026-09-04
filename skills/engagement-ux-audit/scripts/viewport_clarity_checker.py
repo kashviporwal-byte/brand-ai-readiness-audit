@@ -149,9 +149,18 @@ def check_viewport_clarity(raw_html, page_url=""):
     if not raw_html:
         return findings
 
+    # Pre-clean raw HTML: strip <head>, <script>, <style>, <svg>, <noscript>, <template>
+    # contents so JSON-LD schemas and inline scripts/styles don't pollute hero text or word budget
+    clean_html = re.sub(
+        r'<(?:head|script|style|svg|noscript|template)\b[^>]*>.*?</(?:head|script|style|svg|noscript|template)>',
+        '',
+        raw_html,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
     parser = ViewportParser()
     try:
-        parser.feed(raw_html)
+        parser.feed(clean_html)
     except Exception:
         pass
 

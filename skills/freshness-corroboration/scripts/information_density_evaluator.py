@@ -167,17 +167,92 @@ def _count_buzzword_tokens(text):
     return len(matched), matched[:10]  # Cap sample list for evidence string
 
 
+def _evaluate_weighted_tokens(text):
+    """
+    Evaluates substantive tokens across all non-stopword content tokens.
+    Default content words get 1.0 weight.
+    Numeric / Technical terms get 1.5x bonus weight.
+    Capitalized Proper Nouns / Named Entities get 1.2x bonus weight.
+    Buzzwords get 0.0 weight.
+    Returns (weighted_substantive_score, raw_substantive_count).
+    """
+    tokens = re.findall(r"\b[A-Za-z0-9][A-Za-z0-9'_-]*[A-Za-z0-9]\b|\b[A-Za-z0-9]\b", text)
+    weighted_score = 0.0
+    raw_substantive_count = 0
+
+    for tok in tokens:
+        low = tok.lower()
+        if low in _STOPWORDS or len(low) <= 1:
+            continue
+        # Bucket A only: numeric/technical/proper-noun tokens are the sole positive
+        # signal. Ordinary non-buzzword filler words ("team", "helps", "people",
+        # "matters") get 0.0 — they are neither fluff nor fact, and defaulting them
+        # to a positive weight is what caused pure buzzword pages to score as
+        # "dense" (this was the actual v2/v3 regression). This keeps genuinely
+        # factual non-tech prose (numbers, named entities) scoring correctly
+        # without rewarding generic filler just for not being on the buzzword list.
+        weight = 0.0
+        if (_NUMERIC_RE.match(tok) or _TECHNICAL_RE.match(tok) or
+                _TECHNICAL_VERBS_RE.match(tok) or _TECHNICAL_TERMS_RE.match(tok)):
+            weight = 1.5
+        elif tok[0].isupper():
+            weight = 1.2
+
+        weighted_score += weight
+        if weight > 0:
+            raw_substantive_count += 1
+
+    return weighted_score, raw_substantive_count
+
+
 def _count_substantive_tokens(text):
     """
     Counts substantive factual tokens: numbers, acronyms, technical verbs, terms, URLs.
     Returns count.
     """
-    count = 0
-    count += len(_NUMERIC_RE.findall(text))
-    count += len(_TECHNICAL_RE.findall(text))
-    count += len(_TECHNICAL_VERBS_RE.findall(text))
-    count += len(_TECHNICAL_TERMS_RE.findall(text))
-    return count
+    w_score, raw_count = _evaluate_weighted_tokens(text)
+    return int(raw_count)
+
+
+def check_tldr_summary_block(raw_html, page_url=""):
+    """
+    F-FRSH-008: Missing TL;DR or Key Takeaways Summary Block on Long-Form Content.
+    """
+    if not raw_html:
+        return []
+    clean_text = re.sub(r'<[^>]+>', ' ', raw_html)
+    words = clean_text.split()
+    if len(words) < 800:
+        return []
+
+    has_tldr = bool(re.search(
+        r'<(?:h[1-4]|div|section)\b[^>]*>(?:[^<]*\b(?:tl;?dr|key takeaways|summary|at a glance|executive summary)\b[^<]*)</(?:h[1-4]|div|section)>',
+        raw_html, re.IGNORECASE
+    ) or re.search(
+        r'\b(?:class|id)=["\'][^"\']*\b(?:tldr|summary-block|key-takeaways)\b[^"\']*["\']',
+        raw_html, re.IGNORECASE
+    ))
+
+    if not has_tldr:
+        return [_make_finding(
+            rule_id="F-FRSH-008",
+            title="Long-form content (>800 words) lacks a visible TL;DR or Key Takeaways summary block",
+            severity="low",
+            evidence=f"Document contains {len(words)} words but lacks an explicit TL;DR or Key Takeaways section near the top.",
+            summary="Add a self-contained 2-3 sentence 'TL;DR' or 'Key Takeaways' bulleted block at the top of long-form articles.",
+            priority="low",
+            rationale="AI answer engines (Perplexity, ChatGPT) extract summary blocks directly to generate instant answer cards. Providing an explicit summary section maximizes factual retention during AI compression.",
+            code_fix=(
+                '<div class="key-takeaways">\n'
+                '  <h3>Key Takeaways</h3>\n'
+                '  <ul>\n'
+                '    <li>Fact 1: Key specification or product capability</li>\n'
+                '    <li>Fact 2: Measurable performance or benchmark metric</li>\n'
+                '  </ul>\n'
+                '</div>'
+            )
+        )]
+    return []
 
 
 def _simulate_summarization(text, retention_ratio=0.30):
@@ -273,18 +348,20 @@ def check_information_density(raw_html, page_url=""):
     if content_token_count == 0:
         return []
 
-    # Count buzzwords and substantive tokens
+    # Count buzzwords and weighted substantive tokens
     buzzword_count, buzzword_samples = _count_buzzword_tokens(content_text)
-    substantive_count = _count_substantive_tokens(content_text)
+    weighted_subst_score, raw_subst_count = _evaluate_weighted_tokens(content_text)
 
-    # Information Density Score
-    # Denominator: content tokens (all non-stopword tokens)
-    density_score = (substantive_count / content_token_count) * 100.0
+    # Information Density Score using raw Bucket A substantive token count (Appendix F Section 3)
+    density_score = min(100.0, (raw_subst_count / content_token_count) * 100.0)
 
     # Buzzword ratio
     buzzword_ratio = buzzword_count / content_token_count
 
     findings = []
+
+    # Include TL;DR summary block check
+    findings.extend(check_tldr_summary_block(raw_html, page_url))
 
     # ── F-FRSH-006: Low Information Density ──────────────────────────────────
     if density_score < _DENSITY_HIGH_RISK:
@@ -313,7 +390,7 @@ def check_information_density(raw_html, page_url=""):
                 f"Page '{page_url or 'this URL'}' has an information density score of "
                 f"{density_score:.1f}% (target: ≥ 45%). "
                 f"Total content tokens: {content_token_count}; "
-                f"Substantive factual tokens: {substantive_count}; "
+                f"Substantive factual tokens: {raw_subst_count}; "
                 f"Marketing/fluff tokens: {buzzword_count}. "
                 f"Simulated AI extractive summarization retains ~{retention_pct:.0f}% of "
                 f"factual substance — low density means genuine facts are drowned out by "

@@ -42,9 +42,27 @@ class NonTextParser(HTMLParser):
             self.in_figcaption = True
 
         elif tag_lower == "img":
+            # Lazy-loaded image handling: check data-src, data-srcset, data-original, data-lazy-src, data-alt
+            src = attr_dict.get("src", "")
+            data_src = (
+                attr_dict.get("data-src", "")
+                or attr_dict.get("data-srcset", "")
+                or attr_dict.get("data-original", "")
+                or attr_dict.get("data-lazy-src", "")
+            )
+            # If src is empty or a placeholder (data URI / 1x1 gif / blank / spinner), prefer data_src
+            if (not src or "data:image/" in src.lower() or "placeholder" in src.lower() or "blank." in src.lower() or "1x1" in src.lower() or "spinner" in src.lower()) and data_src:
+                effective_src = data_src
+            else:
+                effective_src = src or data_src
+
+            alt = attr_dict.get("alt", None)
+            data_alt = attr_dict.get("data-alt", None)
+            effective_alt = alt if (alt is not None and alt.strip() != "") else (data_alt if data_alt is not None else alt)
+
             self.images.append({
-                "src": attr_dict.get("src", "") or attr_dict.get("data-src", ""),
-                "alt": attr_dict.get("alt", None),
+                "src": effective_src,
+                "alt": effective_alt,
                 "title": attr_dict.get("title", ""),
                 "role": attr_dict.get("role", ""),
                 "aria_hidden": attr_dict.get("aria-hidden", ""),

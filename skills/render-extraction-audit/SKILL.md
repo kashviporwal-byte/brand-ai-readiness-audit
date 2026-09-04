@@ -70,3 +70,5 @@ Returns a structured JSON array of findings. Each finding strictly includes:
 | **`F-REND-011`** | `Medium` | Complex Inline SVG Data Charts Lacking `<title>`/`<desc>` | Subskill 2.3 (`non_text_auditor.py`) |
 | **`F-REND-012`** | `High` | Primary `<h1>` Heading Hidden via CSS Cloaking | Subskill 2.4 (`semantic_html_checker.py`) |
 | **`F-REND-013`** | `Low` | Sparse Static Document Payload ($< 15$ Words) | Subskill 2.1 (`dom_hydrator_diff.py`) |
+| **`F-REND-014`** | `Critical` | AI Crawler User-Agent (GPTBot) Blocked or Served Degraded/Cloaked Content | Subskill 2.4 (`ua_cloaking_auditor.py`) |
+

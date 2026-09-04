@@ -142,16 +142,92 @@ def _jargon_score(text):
     return len(words & JARGON_WORDS)
 
 
-def _find_definition_match(text):
+def _extract_brand_names(raw_html, page_url=""):
+    """
+    Extracts brand names / keywords from metadata, title, and JSON-LD to subject-bind definition sentences.
+    """
+    names = set()
+    # 1. og:site_name
+    m = re.search(r'<meta\s[^>]*property=["\']og:site_name["\'][^>]*content=["\']([^"\']+)["\']', raw_html, re.I)
+    if not m:
+        m = re.search(r'<meta\s[^>]*content=["\']([^"\']+)["\'][^>]*property=["\']og:site_name["\']', raw_html, re.I)
+    if m:
+        names.add(m.group(1).strip().lower())
+    
+    # 2. JSON-LD Organization name
+    jsonld_names = re.findall(r'"name"\s*:\s*"([^"]+)"', raw_html)
+    for n in jsonld_names[:3]:
+        names.add(n.strip().lower())
+
+    # 3. Title tag
+    tm = re.search(r'<title[^>]*>(.*?)</title>', raw_html, re.I | re.S)
+    if tm:
+        title_text = re.sub(r'<[^>]+>', '', tm.group(1)).strip()
+        parts = re.split(r'[\-|:–|—]', title_text)
+        if parts:
+            names.add(parts[0].strip().lower())
+            names.add(parts[-1].strip().lower())
+
+    # 4. Domain name fallback
+    if page_url:
+        try:
+            from urllib.parse import urlparse
+            netloc = urlparse(page_url).netloc
+            domain_part = netloc.replace("www.", "").split(".")[0]
+            if len(domain_part) >= 3:
+                names.add(domain_part.lower())
+        except Exception:
+            pass
+
+    # Clean empty / trivial strings
+    cleaned = set()
+    for n in names:
+        n_clean = re.sub(r'[^\w\s]', '', n).strip()
+        if n_clean and len(n_clean) >= 2 and n_clean not in ("home", "official site", "welcome"):
+            cleaned.add(n_clean)
+    return cleaned
+
+
+def _find_definition_match(text, brand_names=None):
     """
     Searches text for the first definition pattern match.
+    Verifies that the matched subject is bound to the brand (or first-person 'We'/'Our').
     Returns (matched_string, is_jargon_heavy) or (None, False).
     """
+    if not text:
+        return None, False
+
     for pattern in DEFINITION_PATTERNS:
-        m = pattern.search(text)
-        if m:
+        for m in pattern.finditer(text):
             matched = m.group(0).strip()
+            # Subject-binding check if brand_names provided
+            if brand_names:
+                # If matched starts with "We ", it's valid first-person binding
+                if matched.lower().startswith("we "):
+                    return matched, _jargon_score(matched) >= JARGON_THRESHOLD
+
+                # Get the lead subject token/phrase before verb
+                sub_match = re.match(
+                    r'^([\w][\w\s\-]{0,35})\s+(?:is|are|provides|enables|delivers|helps|offers|powers|connects|automates|simplifies|transforms)',
+                    matched, re.I
+                )
+                if sub_match:
+                    subject = sub_match.group(1).strip().lower()
+                    # Check subject against brand names
+                    is_bound = False
+                    for bname in brand_names:
+                        if bname in subject or subject in bname:
+                            is_bound = True
+                            break
+                        sub_tokens = set(subject.split())
+                        b_tokens = set(bname.split())
+                        if sub_tokens & b_tokens:
+                            is_bound = True
+                            break
+                    if not is_bound:
+                        continue  # Skip non-brand subject match
             return matched, _jargon_score(matched) >= JARGON_THRESHOLD
+
     return None, False
 
 
@@ -172,6 +248,9 @@ def check_quotable_definition(raw_html, page_url=""):
     if not raw_html:
         return findings
 
+    # Extract brand names for subject binding
+    brand_names = _extract_brand_names(raw_html, page_url)
+
     # ── 1. Extract meta description ──────────────────────────────────────────
     meta_desc = _extract_meta_description(raw_html)
 
@@ -187,7 +266,7 @@ def check_quotable_definition(raw_html, page_url=""):
 
     # ── 3. Search for definition pattern ─────────────────────────────────────
     # Primary: top 200 words of visible text
-    matched, is_jargon_heavy = _find_definition_match(first_200)
+    matched, is_jargon_heavy = _find_definition_match(first_200, brand_names)
 
     # Secondary: check inside <main> or <article> container if present
     if not matched:
@@ -199,7 +278,7 @@ def check_quotable_definition(raw_html, page_url=""):
                 main_text = main_parser.get_text()
                 if len(main_text.split()) >= 15:
                     first_200_main, _ = _first_n_words(main_text, 200)
-                    m_match, m_jargon = _find_definition_match(first_200_main)
+                    m_match, m_jargon = _find_definition_match(first_200_main, brand_names)
                     if m_match:
                         matched, is_jargon_heavy = m_match, m_jargon
             except Exception:
@@ -212,13 +291,13 @@ def check_quotable_definition(raw_html, page_url=""):
             p_clean = re.sub(r'<[^>]+>', ' ', p_raw)
             p_clean = re.sub(r'\s+', ' ', p_clean).strip()
             if len(p_clean.split()) >= 8:
-                p_match, p_jargon = _find_definition_match(p_clean)
+                p_match, p_jargon = _find_definition_match(p_clean, brand_names)
                 if p_match:
                     matched, is_jargon_heavy = p_match, p_jargon
                     break
 
     # Fallback: meta description (often the best candidate)
-    meta_matched, meta_jargon = _find_definition_match(meta_desc)
+    meta_matched, meta_jargon = _find_definition_match(meta_desc, brand_names)
 
     definition_found   = matched is not None or meta_matched is not None
     effective_match    = matched or meta_matched

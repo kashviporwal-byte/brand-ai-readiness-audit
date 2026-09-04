@@ -209,17 +209,18 @@ def _validate_iso8601(value, now_utc):
 def _extract_copyright_years(text):
     """
     Returns a list of (start_year: int, end_year: int or None) tuples
-    from copyright strings found in the given text.
+    from copyright strings found in the given text. Always picks the latest year in range.
     """
     results = []
     for pattern in _COPYRIGHT_PATTERNS:
         for match in pattern.finditer(text):
             try:
-                start = int(match.group(1))
-                end = int(match.group(2)) if match.group(2) else None
-                if 1990 <= start <= 2100:
+                years = [int(y) for y in re.findall(r"\b(199\d|20\d\d)\b", match.group(0))]
+                if years:
+                    start = years[0]
+                    end = max(years) if len(years) > 1 else None
                     results.append((start, end))
-            except (IndexError, TypeError, ValueError):
+            except Exception:
                 continue
     return results
 

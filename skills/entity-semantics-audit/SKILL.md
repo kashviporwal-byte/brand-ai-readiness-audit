@@ -76,3 +76,6 @@ Returns a structured JSON array of findings. Each finding strictly includes:
 | F-ENT-007  | medium   | 3.3      | Definition sentence found but ≥3 marketing jargon / buzzword terms |
 | F-ENT-008  | medium   | 3.4      | Multi-language signals detected but hreflang alternate tags absent |
 | F-ENT-009  | low      | 3.4      | No areaServed / inLanguage / audience schema or geo-meta tags found |
+| F-ENT-010  | medium   | 3.1      | FAQ/Q&A content present but lacks FAQPage Schema.org markup |
+| F-ENT-011  | medium   | 3.4      | Broken hreflang reciprocity: alternate language pages fail to link back to primary page |
+

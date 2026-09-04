@@ -116,9 +116,17 @@ def check_heading_anchors(raw_html, page_url=""):
     if not raw_html:
         return findings
 
+    # Pre-clean raw HTML: strip <head>, <script>, <style>, <svg>, <noscript>, <template>
+    clean_html = re.sub(
+        r'<(?:head|script|style|svg|noscript|template)\b[^>]*>.*?</(?:head|script|style|svg|noscript|template)>',
+        '',
+        raw_html,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
     parser = HeadingAnchorParser()
     try:
-        parser.feed(raw_html)
+        parser.feed(clean_html)
     except Exception:
         pass
 

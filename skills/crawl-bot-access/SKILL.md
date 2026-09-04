@@ -50,3 +50,6 @@ A JSON array of findings adhering to the unified schema:
 | `F-CRAWL-010` | High | Broken URLs (HTTP 4xx/5xx) found in sitemap |
 | `F-CRAWL-011` | Low | Missing or malformed `/llms.txt` AI discovery manifest |
 | `F-CRAWL-012` | Low | Missing or malformed `/llms-full.txt` full-content manifest |
+| `F-CRAWL-013` | Medium | Audited primary URL explicitly disallowed by `robots.txt` for AI crawlers |
+| `F-CRAWL-014` | Medium | Excessive `Crawl-delay:` directive (>10s) in `robots.txt` |
+
