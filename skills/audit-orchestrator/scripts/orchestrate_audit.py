@@ -291,6 +291,15 @@ STATIC_ASSET_RE = re.compile(
     r'\.(?:png|jpg|jpeg|gif|svg|webp|css|js|pdf|zip|xml|txt|ico|woff|woff2|ttf|mp4|mp3)$',
     re.IGNORECASE
 )
+# Namespace colon filter: blocks wiki-style utility namespaces like
+# /wiki/Special:..., /wiki/Help:..., /wiki/Talk:..., /wiki/Wikipedia:...
+# These appear in MediaWiki, Confluence, and similar wiki platforms.
+# The signal: any URL path segment containing ':' after the first path component.
+# This is a STRUCTURAL rule, not a site-specific one.
+NAMESPACE_COLON_RE = re.compile(
+    r'/[^/]+:[^/]',  # any segment like /Special:Foo or /Help:Bar
+    re.IGNORECASE
+)
 
 # ---------------------------------------------------------------------------
 # Cluster normalization regexes — ORDER MATTERS: DATE before VERSION
@@ -428,7 +437,9 @@ def extract_navigation_links(raw_html, base_url, final_url):
             p = urlparse(abs_u)
             clean_u = f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
             if clean_u != norm_base and clean_u != norm_target and clean_u.startswith(norm_base):
-                if not STATIC_ASSET_RE.search(clean_u) and not UTILITY_NOISE_RE.search(clean_u):
+                if (not STATIC_ASSET_RE.search(clean_u)
+                        and not UTILITY_NOISE_RE.search(clean_u)
+                        and not NAMESPACE_COLON_RE.search(p.path)):
                     nav_links.add(clean_u)
     return nav_links
 
@@ -533,7 +544,8 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
                     if (clean_u != norm_target and clean_u != norm_base
                             and clean_u.startswith(norm_base)
                             and not STATIC_ASSET_RE.search(clean_u)
-                            and not UTILITY_NOISE_RE.search(clean_u)):
+                            and not UTILITY_NOISE_RE.search(clean_u)
+                            and not NAMESPACE_COLON_RE.search(p.path)):
                         candidate_urls.add(clean_u)
                         count += 1
     except Exception:
@@ -550,8 +562,31 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
             if (clean_u != norm_base and clean_u != norm_target
                     and clean_u.startswith(norm_base)
                     and not STATIC_ASSET_RE.search(clean_u)
-                    and not UTILITY_NOISE_RE.search(clean_u)):
+                    and not UTILITY_NOISE_RE.search(clean_u)
+                    and not NAMESPACE_COLON_RE.search(p.path)):
                 candidate_urls.add(clean_u)
+
+    if not candidate_urls:
+        return []
+
+    # ── PRE-SCORE FILTER: Remove bare semantic roots ────────────────────────
+    # A URL like docs.python.org/3.9 (no next segment) clusters as __version__
+    # but has NO diagnostic value — it's just a version switcher link.
+    # These are caught by the __version__/__archive__ hard-dedup in selection,
+    # but filtering them here prevents them from consuming the FIRST slot.
+    def _is_bare_semantic_root(url):
+        """True if URL is a bare version/date/locale root with no content path."""
+        path_parts = [p for p in urlparse(url).path.strip("/").split("/") if p]
+        if not path_parts:
+            return False
+        first = path_parts[0]
+        if len(path_parts) == 1:
+            return (DATE_SEGMENT_RE.match(first) or
+                    VERSION_SEGMENT_RE.match(first) or
+                    LOCALE_SEGMENT_RE.match(first))
+        return False
+
+    candidate_urls = {u for u in candidate_urls if not _is_bare_semantic_root(u)}
 
     if not candidate_urls:
         return []
