@@ -1,0 +1,145 @@
+[
+  {
+    "name": "Stripe (Enterprise SaaS)",
+    "url": "https://stripe.com",
+    "score": 65,
+    "elapsed": 2.832,
+    "total": 8,
+    "critical": 0,
+    "high": 2,
+    "medium": 3,
+    "low": 3,
+    "skills": {
+      "render-extraction-audit": 5,
+      "engagement-ux-audit": 2,
+      "entity-semantics-audit": 1
+    },
+    "eng_rules": [
+      "F-ENG-001",
+      "F-ENG-004"
+    ]
+  },
+  {
+    "name": "GitHub (Dev Platform)",
+    "url": "https://github.com",
+    "score": 44,
+    "elapsed": 1.698,
+    "total": 8,
+    "critical": 0,
+    "high": 5,
+    "medium": 1,
+    "low": 2,
+    "skills": {
+      "entity-semantics-audit": 3,
+      "render-extraction-audit": 3,
+      "engagement-ux-audit": 2
+    },
+    "eng_rules": [
+      "F-ENG-001",
+      "F-ENG-005"
+    ]
+  },
+  {
+    "name": "Hacker News (Dense Aggregator)",
+    "url": "https://news.ycombinator.com",
+    "score": 30,
+    "elapsed": 2.764,
+    "total": 10,
+    "critical": 0,
+    "high": 6,
+    "medium": 2,
+    "low": 2,
+    "skills": {
+      "entity-semantics-audit": 4,
+      "render-extraction-audit": 3,
+      "engagement-ux-audit": 3
+    },
+    "eng_rules": [
+      "F-ENG-003",
+      "F-ENG-004",
+      "F-ENG-007"
+    ]
+  },
+  {
+    "name": "TodoMVC (React Client SPA)",
+    "url": "https://todomvc.com/examples/react/dist/",
+    "score": 16,
+    "elapsed": 1.071,
+    "total": 9,
+    "critical": 1,
+    "high": 5,
+    "medium": 2,
+    "low": 1,
+    "skills": {
+      "render-extraction-audit": 3,
+      "entity-semantics-audit": 4,
+      "engagement-ux-audit": 2
+    },
+    "eng_rules": [
+      "F-ENG-003",
+      "F-ENG-004"
+    ]
+  },
+  {
+    "name": "Wikipedia AI (Long Academic)",
+    "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    "score": 57,
+    "elapsed": 11.338,
+    "total": 7,
+    "critical": 0,
+    "high": 4,
+    "medium": 0,
+    "low": 3,
+    "skills": {
+      "entity-semantics-audit": 3,
+      "render-extraction-audit": 1,
+      "engagement-ux-audit": 3
+    },
+    "eng_rules": [
+      "F-ENG-003",
+      "F-ENG-008",
+      "F-ENG-007"
+    ]
+  },
+  {
+    "name": "W3C (Technical Standards)",
+    "url": "https://www.w3.org",
+    "score": 40,
+    "elapsed": 0.666,
+    "total": 9,
+    "critical": 0,
+    "high": 5,
+    "medium": 2,
+    "low": 2,
+    "skills": {
+      "render-extraction-audit": 3,
+      "entity-semantics-audit": 4,
+      "engagement-ux-audit": 2
+    },
+    "eng_rules": [
+      "F-ENG-003",
+      "F-ENG-004"
+    ]
+  },
+  {
+    "name": "HTTPBin (Dev API Service)",
+    "url": "https://httpbin.org",
+    "score": 27,
+    "elapsed": 1.224,
+    "total": 10,
+    "critical": 0,
+    "high": 6,
+    "medium": 3,
+    "low": 1,
+    "skills": {
+      "engagement-ux-audit": 3,
+      "render-extraction-audit": 3,
+      "entity-semantics-audit": 4
+    },
+    "eng_rules": [
+      "F-ENG-001",
+      "F-ENG-003",
+      "F-ENG-004"
+    ]
+  }
+]

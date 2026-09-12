@@ -1,0 +1,924 @@
+{
+  "summary": {
+    "total_batches": 5,
+    "total_sites": 18,
+    "total_findings": 49,
+    "severity_counts": {
+      "critical": 1,
+      "high": 12,
+      "medium": 25,
+      "low": 11
+    },
+    "rule_counts": {
+      "F-REND-011": 7,
+      "F-REND-010": 9,
+      "F-REND-003": 10,
+      "F-REND-001": 1,
+      "F-REND-006": 5,
+      "F-REND-009": 3,
+      "F-REND-013": 1,
+      "F-REND-007": 9,
+      "F-REND-004": 1,
+      "F-REND-008": 1,
+      "F-REND-002": 2
+    },
+    "avg_analysis_time_ms": 63.61,
+    "total_duration_s": 37.38
+  },
+  "batches": {
+    "Batch 1: Modern JS & Component Frameworks": [
+      {
+        "url": "https://svelte.dev",
+        "label": "Svelte.js Official Site",
+        "status": 200,
+        "payload_bytes": 89783,
+        "fetch_time_s": 1.4,
+        "analysis_time_ms": 25.0,
+        "findings_count": 2,
+        "findings": [
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 2.3% (2,076 text chars vs 89,783 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://astro.build",
+        "label": "Astro Island Architecture",
+        "status": 200,
+        "payload_bytes": 313749,
+        "fetch_time_s": 1.51,
+        "analysis_time_ms": 69.7,
+        "findings_count": 3,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 42 informational images; 9/42 (21.4%) have defective alt attributes: 9 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 22 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 2.1% (6,742 text chars vs 313,749 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://todomvc.com/examples/react/dist/",
+        "label": "React Client SPA Shell",
+        "status": 200,
+        "payload_bytes": 645,
+        "fetch_time_s": 0.79,
+        "analysis_time_ms": 2.0,
+        "findings_count": 3,
+        "findings": [
+          {
+            "id": "F-REND-001",
+            "skill_id": "render-extraction-audit",
+            "title": "Client-side JS hydration trap detected (empty SPA body shell)",
+            "severity": "critical",
+            "impact_area": "ai_discoverability",
+            "evidence": "Target page contains only 13 extractable words in raw HTML (Payload: 645 bytes). Detected architecture: Client JavaScript Application Shell. Noscript fallback status: none.",
+            "suggested_action": {
+              "summary": "Implement Server-Side Rendering (SSR) or Static Site Generation (SSG) so raw HTML contains full text content.",
+              "priority": "critical",
+              "rationale": "AI crawlers like GPTBot and search indexing engines frequently fetch raw HTML without executing client-side JavaScript bundles. An empty body shell renders the brand completely invisible to AI assistants.",
+              "code_fix_example": "// Next.js: Ensure server components are default (avoid 'use client' on root layout)\n// Pages router: export async function getStaticProps() { return { props: { data } }; }"
+            }
+          },
+          {
+            "id": "F-REND-006",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing primary <h1> heading tag",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <h1> heading tags. AI models rely on H1 to identify the core topic and entity of the page.",
+            "suggested_action": {
+              "summary": "Introduce a single, descriptive <h1> tag encapsulating the primary entity and value proposition.",
+              "priority": "high",
+              "rationale": "Without an H1, AI document parsers struggle to establish the primary subject matter of the document, reducing citation confidence.",
+              "code_fix_example": "<h1>Acme Cloud Platform: Automated Enterprise Workflow Orchestration</h1>"
+            }
+          },
+          {
+            "id": "F-REND-009",
+            "skill_id": "render-extraction-audit",
+            "title": "Absence of semantic <main> or <article> landmark tags (div soup)",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <main> and 0 <article> landmarks. Core content is wrapped entirely in generic <div> containers.",
+            "suggested_action": {
+              "summary": "Wrap the primary textual substance in a semantic <main> landmark container.",
+              "priority": "medium",
+              "rationale": "Semantic HTML allows AI parsers to instantly separate substantive content from boilerplate navigation bars, cookie banners, and footers.",
+              "code_fix_example": "<main>\n  <h1>Product Overview</h1>\n  <article>...Substantive content...</article>\n</main>"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://todomvc.com/examples/emberjs/todomvc/dist/",
+        "label": "Ember.js Client SPA Shell",
+        "status": 200,
+        "payload_bytes": 1321,
+        "fetch_time_s": 0.77,
+        "analysis_time_ms": 2.0,
+        "findings_count": 3,
+        "findings": [
+          {
+            "id": "F-REND-013",
+            "skill_id": "render-extraction-audit",
+            "title": "Extremely sparse static document payload lacks substantive brand facts",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains only 0 extractable words and zero client-side hydration mounts. Static payload is too thin for AI retrieval engines to answer questions about the brand.",
+            "suggested_action": {
+              "summary": "Expand static page copy to include substantive brand overview and value proposition.",
+              "priority": "low",
+              "rationale": "LLMs and search indexing crawlers require sufficient descriptive text to understand the entity's offering.",
+              "code_fix_example": "<main>\n  <h1>Acme Inc</h1>\n  <p>Acme delivers automated enterprise workflow orchestration with real-time event routing...</p>\n</main>"
+            }
+          },
+          {
+            "id": "F-REND-006",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing primary <h1> heading tag",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <h1> heading tags. AI models rely on H1 to identify the core topic and entity of the page.",
+            "suggested_action": {
+              "summary": "Introduce a single, descriptive <h1> tag encapsulating the primary entity and value proposition.",
+              "priority": "high",
+              "rationale": "Without an H1, AI document parsers struggle to establish the primary subject matter of the document, reducing citation confidence.",
+              "code_fix_example": "<h1>Acme Cloud Platform: Automated Enterprise Workflow Orchestration</h1>"
+            }
+          },
+          {
+            "id": "F-REND-009",
+            "skill_id": "render-extraction-audit",
+            "title": "Absence of semantic <main> or <article> landmark tags (div soup)",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <main> and 0 <article> landmarks. Core content is wrapped entirely in generic <div> containers.",
+            "suggested_action": {
+              "summary": "Wrap the primary textual substance in a semantic <main> landmark container.",
+              "priority": "medium",
+              "rationale": "Semantic HTML allows AI parsers to instantly separate substantive content from boilerplate navigation bars, cookie banners, and footers.",
+              "code_fix_example": "<main>\n  <h1>Product Overview</h1>\n  <article>...Substantive content...</article>\n</main>"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://v2.vuejs.org",
+        "label": "Vue.js Documentation",
+        "status": 200,
+        "payload_bytes": 38890,
+        "fetch_time_s": 0.61,
+        "analysis_time_ms": 23.4,
+        "findings_count": 1,
+        "findings": [
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 2 instances where headings skip outline levels: Document root -> <h4> ('Documentation'); <h1> ('The ProgressiveJavaScript') -> <h3> ('Special Sponsor').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          }
+        ]
+      }
+    ],
+    "Batch 2: E-Commerce & Product Catalogs": [
+      {
+        "url": "https://books.toscrape.com",
+        "label": "E-Commerce Bookstore Catalog",
+        "status": 200,
+        "payload_bytes": 51274,
+        "fetch_time_s": 2.07,
+        "analysis_time_ms": 27.7,
+        "findings_count": 2,
+        "findings": [
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: <h1> ('All products') -> <h3> ('A Light in the ...').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 3.6% (1,822 text chars vs 51,274 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://woocommerce.com",
+        "label": "Automattic WooCommerce Platform",
+        "status": 200,
+        "payload_bytes": 308929,
+        "fetch_time_s": 2.23,
+        "analysis_time_ms": 48.1,
+        "findings_count": 2,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 65 informational images; 15/65 (23.1%) have defective alt attributes: 15 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 1.5% (4,686 text chars vs 308,929 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://gumroad.com",
+        "label": "Creator E-Commerce Platform",
+        "status": 200,
+        "payload_bytes": 129040,
+        "fetch_time_s": 3.38,
+        "analysis_time_ms": 31.1,
+        "findings_count": 4,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 129 informational images; 103/129 (79.8%) have defective alt attributes: 1 images completely lack alt attributes; 102 use generic placeholders (' icon', ' icon').",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-006",
+            "skill_id": "render-extraction-audit",
+            "title": "Multiple competing <h1> headings cause topical ambiguity",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 3 separate <h1> tags ('Go from 0 to $1', '$2,194,459', 'Share your work. Someone out there ...'). A web document should maintain a single primary H1 landmark.",
+            "suggested_action": {
+              "summary": "Consolidate into a single primary <h1> tag and demote secondary titles to <h2>.",
+              "priority": "medium",
+              "rationale": "Multiple H1 tags dilute keyword authority and create ambiguity during vector embedding topic assignment.",
+              "code_fix_example": "<!-- Change secondary H1 to H2 -->\n<h2>Secondary Section Title</h2>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: <h1> ('$2,194,459') -> <h3> ('Max Ulichney').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 3.2% (4,169 text chars vs 129,040 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      }
+    ],
+    "Batch 3: Modern Documentation & SSG Engines": [
+      {
+        "url": "https://docusaurus.io",
+        "label": "Meta Docusaurus Framework",
+        "status": 200,
+        "payload_bytes": 37734,
+        "fetch_time_s": 4.48,
+        "analysis_time_ms": 49.9,
+        "findings_count": 2,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 24 informational images; 2/24 (8.3%) have defective alt attributes: 2 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "medium",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: <h1> ('Docusaurus with KeytarBui') -> <h3> ('Powered by MDX').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://www.mkdocs.org",
+        "label": "Python MkDocs Documentation",
+        "status": 200,
+        "payload_bytes": 14733,
+        "fetch_time_s": 3.03,
+        "analysis_time_ms": 10.6,
+        "findings_count": 1,
+        "findings": [
+          {
+            "id": "F-REND-009",
+            "skill_id": "render-extraction-audit",
+            "title": "Absence of semantic <main> or <article> landmark tags (div soup)",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <main> and 0 <article> landmarks. Core content is wrapped entirely in generic <div> containers.",
+            "suggested_action": {
+              "summary": "Wrap the primary textual substance in a semantic <main> landmark container.",
+              "priority": "medium",
+              "rationale": "Semantic HTML allows AI parsers to instantly separate substantive content from boilerplate navigation bars, cookie banners, and footers.",
+              "code_fix_example": "<main>\n  <h1>Product Overview</h1>\n  <article>...Substantive content...</article>\n</main>"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://vitepress.dev",
+        "label": "VitePress SSG Engine",
+        "status": 200,
+        "payload_bytes": 14411,
+        "fetch_time_s": 1.36,
+        "analysis_time_ms": 6.6,
+        "findings_count": 1,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 2 informational images; 1/2 (50.0%) have defective alt attributes: 1 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          }
+        ]
+      }
+    ],
+    "Batch 4: Enterprise SaaS & Modern Landing Pages": [
+      {
+        "url": "https://stripe.com",
+        "label": "Stripe Global Payments Infrastructure",
+        "status": 200,
+        "payload_bytes": 694620,
+        "fetch_time_s": 2.51,
+        "analysis_time_ms": 103.2,
+        "findings_count": 5,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 30 informational images; 26/30 (86.7%) have defective alt attributes: 26 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-004",
+            "skill_id": "render-extraction-audit",
+            "title": "Interactive <canvas> data visualizations lack machine-readable text fallbacks",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 <canvas> elements; 1 lack aria-label, aria-describedby, or fallback DOM text.",
+            "suggested_action": {
+              "summary": "Add aria-label descriptions or fallback data tables alongside canvas visualizations.",
+              "priority": "medium",
+              "rationale": "Canvas elements render directly to a pixel buffer. AI extractors see an empty container unless accessibility labels or data tables are provided.",
+              "code_fix_example": "<canvas id=\"latency-chart\" aria-label=\"Benchmark graph demonstrating 4x lower latency compared to legacy queue solutions\"></canvas>"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 2 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-008",
+            "skill_id": "render-extraction-audit",
+            "title": "Empty heading tags detected in markup",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 empty heading elements (h4) with zero text content.",
+            "suggested_action": {
+              "summary": "Remove empty heading elements or populate them with descriptive section titles.",
+              "priority": "low",
+              "rationale": "Empty headings confuse automated scrapers and screen readers.",
+              "code_fix_example": "<!-- Remove empty tags used solely for CSS spacing -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 1.9% (12,860 text chars vs 694,620 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://supabase.com",
+        "label": "Supabase Open Source Firebase",
+        "status": 200,
+        "payload_bytes": 1329720,
+        "fetch_time_s": 1.58,
+        "analysis_time_ms": 378.7,
+        "findings_count": 5,
+        "findings": [
+          {
+            "id": "F-REND-002",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing substantive <noscript> fallback summary for non-JS scrapers",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Client-side rendered page provides 'none' noscript fallback. Scrapers bypassing JS receive no informative fallback summary.",
+            "suggested_action": {
+              "summary": "Provide an accessible <noscript> section containing a factual 200-word overview of the page.",
+              "priority": "medium",
+              "rationale": "Ensures baseline text extraction succeeds even when headless execution fails or times out.",
+              "code_fix_example": "<noscript>\n  <div class=\"no-js-summary\">\n    <h2>Acme Cloud Platform</h2>\n    <p>Acme delivers automated enterprise workflow orchestration with sub-millisecond event streaming...</p>\n  </div>\n</noscript>"
+            }
+          },
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 55 informational images; 6/55 (10.9%) have defective alt attributes: 6 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: <h2> ('Footer') -> <h6> ('Product').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 0.6% (8,622 text chars vs 1,329,720 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://linear.app",
+        "label": "Linear Project Management",
+        "status": 200,
+        "payload_bytes": 1266841,
+        "fetch_time_s": 4.18,
+        "analysis_time_ms": 193.1,
+        "findings_count": 4,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 38 informational images; 27/38 (71.1%) have defective alt attributes: 27 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 17 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: <h1> ('The product development s') -> <h3> ('Faster app launch').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 0.8% (10,303 text chars vs 1,266,841 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://vercel.com",
+        "label": "Vercel Frontend Cloud",
+        "status": 200,
+        "payload_bytes": 521741,
+        "fetch_time_s": 2.12,
+        "analysis_time_ms": 59.1,
+        "findings_count": 3,
+        "findings": [
+          {
+            "id": "F-REND-002",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing substantive <noscript> fallback summary for non-JS scrapers",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Client-side rendered page provides 'none' noscript fallback. Scrapers bypassing JS receive no informative fallback summary.",
+            "suggested_action": {
+              "summary": "Provide an accessible <noscript> section containing a factual 200-word overview of the page.",
+              "priority": "medium",
+              "rationale": "Ensures baseline text extraction succeeds even when headless execution fails or times out.",
+              "code_fix_example": "<noscript>\n  <div class=\"no-js-summary\">\n    <h2>Acme Cloud Platform</h2>\n    <p>Acme delivers automated enterprise workflow orchestration with sub-millisecond event streaming...</p>\n  </div>\n</noscript>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: Document root -> <h5> ('Agent Stack').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          },
+          {
+            "id": "F-REND-010",
+            "skill_id": "render-extraction-audit",
+            "title": "Excessive markup and script bloat dilutes AI extraction density",
+            "severity": "low",
+            "impact_area": "ai_discoverability",
+            "evidence": "Text-to-HTML density ratio is 0.7% (3,657 text chars vs 521,741 markup chars). Over 95% of document payload is overhead markup, styles, or inline scripts.",
+            "suggested_action": {
+              "summary": "Externalize inline scripts and CSS styles to increase the document text-to-code ratio above 10%.",
+              "priority": "low",
+              "rationale": "High code bloat exhausts AI retrieval context windows and causes LLM tokenizers to drop substantive facts.",
+              "code_fix_example": "<!-- Move inline <style> and tracking <script> blocks to external cached .css and .js files -->"
+            }
+          }
+        ]
+      }
+    ],
+    "Batch 5: Publications, Journalism & Academic": [
+      {
+        "url": "https://arxiv.org",
+        "label": "Cornell University arXiv Scientific Archive",
+        "status": 200,
+        "payload_bytes": 38051,
+        "fetch_time_s": 1.01,
+        "analysis_time_ms": 22.9,
+        "findings_count": 1,
+        "findings": [
+          {
+            "id": "F-REND-006",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing primary <h1> heading tag",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <h1> heading tags. AI models rely on H1 to identify the core topic and entity of the page.",
+            "suggested_action": {
+              "summary": "Introduce a single, descriptive <h1> tag encapsulating the primary entity and value proposition.",
+              "priority": "high",
+              "rationale": "Without an H1, AI document parsers struggle to establish the primary subject matter of the document, reducing citation confidence.",
+              "code_fix_example": "<h1>Acme Cloud Platform: Automated Enterprise Workflow Orchestration</h1>"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://themarkup.org",
+        "label": "Data-Driven Investigative Journalism",
+        "status": 200,
+        "payload_bytes": 90298,
+        "fetch_time_s": 2.07,
+        "analysis_time_ms": 30.1,
+        "findings_count": 3,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 17 informational images; 1/17 (5.9%) have defective alt attributes: 1 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "medium",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 2 instances where headings skip outline levels: Document root -> <h3> ('Investigations and Tools'); <h1> ('The Markup challenges tec') -> <h3> ('This Just In').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          }
+        ]
+      },
+      {
+        "url": "https://restofworld.org",
+        "label": "Global Tech Journalism Publication",
+        "status": 200,
+        "payload_bytes": 170338,
+        "fetch_time_s": 0.48,
+        "analysis_time_ms": 61.7,
+        "findings_count": 4,
+        "findings": [
+          {
+            "id": "F-REND-003",
+            "skill_id": "render-extraction-audit",
+            "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Audited 67 informational images; 8/67 (11.9%) have defective alt attributes: 8 images completely lack alt attributes.",
+            "suggested_action": {
+              "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+              "priority": "high",
+              "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+              "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+            }
+          },
+          {
+            "id": "F-REND-011",
+            "skill_id": "render-extraction-audit",
+            "title": "Complex inline SVG data charts lack <title> or <desc> accessible metadata",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Found 1 complex SVG graphics (>= 5 data nodes) with zero <title>, <desc>, or aria-label attributes.",
+            "suggested_action": {
+              "summary": "Include <title> and <desc> tags inside complex SVG visualizations to describe their underlying data.",
+              "priority": "medium",
+              "rationale": "Screen readers and multimodal AI extractors rely on SVG title and description tags to extract facts from vector graphs.",
+              "code_fix_example": "<svg role=\"img\" aria-labelledby=\"svg-title svg-desc\">\n  <title id=\"svg-title\">Annual Growth Chart</title>\n  <desc id=\"svg-desc\">Graph showing 140% year-over-year revenue expansion in enterprise tier</desc>\n  ...\n</svg>"
+            }
+          },
+          {
+            "id": "F-REND-006",
+            "skill_id": "render-extraction-audit",
+            "title": "Missing primary <h1> heading tag",
+            "severity": "high",
+            "impact_area": "ai_discoverability",
+            "evidence": "Document contains 0 <h1> heading tags. AI models rely on H1 to identify the core topic and entity of the page.",
+            "suggested_action": {
+              "summary": "Introduce a single, descriptive <h1> tag encapsulating the primary entity and value proposition.",
+              "priority": "high",
+              "rationale": "Without an H1, AI document parsers struggle to establish the primary subject matter of the document, reducing citation confidence.",
+              "code_fix_example": "<h1>Acme Cloud Platform: Automated Enterprise Workflow Orchestration</h1>"
+            }
+          },
+          {
+            "id": "F-REND-007",
+            "skill_id": "render-extraction-audit",
+            "title": "Broken heading hierarchy with skipped outline levels",
+            "severity": "medium",
+            "impact_area": "ai_discoverability",
+            "evidence": "Detected 1 instances where headings skip outline levels: Document root -> <h5> ('Explore by').",
+            "suggested_action": {
+              "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+              "priority": "medium",
+              "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+              "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,250 @@
+{
+  "site": "https://www.lakhanifootwear.com",
+  "audited_at": "2026-09-12T04:37:04.897262+00:00",
+  "crawl_mode": "single-page",
+  "pages_audited": [
+    "https://www.lakhanifootwear.com"
+  ],
+  "pages_summary": [],
+  "total_pages": 1,
+  "ai_score_narrative": "Score 5/100: Driven primarily by 4 finding(s) in render-extraction-audit, 3 finding(s) in entity-semantics-audit.",
+  "summary": {
+    "total_findings": 14,
+    "critical": 1,
+    "high": 5,
+    "medium": 4,
+    "low": 4
+  },
+  "findings": [
+    {
+      "id": "F-REND-014",
+      "skill_id": "render-extraction-audit",
+      "title": "AI Crawler User-Agent (GPTBot) is blocked by server (HTTP 429)",
+      "severity": "critical",
+      "impact_area": "render_extraction",
+      "evidence": "Target URL 'https://www.lakhanifootwear.com' returned HTTP 429 when requested with User-Agent 'GPTBot/1.0' while standard browser UA succeeded.",
+      "suggested_action": {
+        "summary": "Configure Web Application Firewall (WAF) or CDN bot management rules to permit legitimate AI search crawlers.",
+        "priority": "high",
+        "rationale": "Cloudflare or WAF User-Agent challenges targeting AI bots prevent ChatGPT and SearchGPT from retrieving brand content.",
+        "code_fix_example": "# Cloudflare WAF Rule:\nAllow (http.user_agent contains \"GPTBot\")"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-FRSH-001",
+      "skill_id": "freshness-corroboration",
+      "title": "Missing datePublished / dateModified temporal metadata",
+      "severity": "high",
+      "impact_area": "ai_discoverability",
+      "evidence": "No machine-readable publication or modification date found on https://www.lakhanifootwear.com. Checked JSON-LD (datePublished, dateModified), Open Graph meta tags (article:published_time, article:modified_time), Dublin Core (DC.date), and HTML <time datetime> elements. AI retrieval systems discount undated content and may omit it from recency-sensitive queries.",
+      "suggested_action": {
+        "summary": "Add datePublished and dateModified timestamps in JSON-LD structured data and Open Graph meta tags.",
+        "priority": "high",
+        "rationale": "AI assistants (Perplexity, ChatGPT Browse, Bing Copilot) apply temporal decay weighting. Undated pages are ranked lower in recency-filtered queries and may be excluded from 'recent news' or 'latest updates' answer sets.",
+        "code_fix_example": "<!-- In <head>: -->\n<meta property=\"article:published_time\" content=\"2025-01-15T09:00:00Z\" />\n<meta property=\"article:modified_time\" content=\"2025-09-01T12:00:00Z\" />\n\n<!-- JSON-LD: -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebPage\",\n  \"datePublished\": \"2025-01-15T09:00:00Z\",\n  \"dateModified\": \"2025-09-01T12:00:00Z\"\n}\n</script>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENT-006",
+      "skill_id": "entity-semantics-audit",
+      "title": "No clear quotable entity definition sentence found in top 200 words",
+      "severity": "high",
+      "impact_area": "ai_discoverability",
+      "evidence": "Scanned first 200 visible words and meta description (present). No clear 'X is a/an [type] that [provides/does]...' definition pattern detected. Top-200-word preview: \"Lakhani Footwear: Buy Sports Shoes, Outdoor Shoes, Sandals, Slippers Online Menu Shop Online About Us Product Catalog Contact Us Log In Sign Up Cart 0...\"",
+      "suggested_action": {
+        "summary": "Add a concise, self-contained definition sentence in the first paragraph of the homepage and in the meta description.",
+        "priority": "high",
+        "rationale": "AI answer engines (ChatGPT, Perplexity, Claude) extract direct quotes from web pages to synthesize answers. A clear 'X is a [type] that [does Y]' pattern is the highest-probability quotable sentence for brand question answering. Pages without one are described by AI using third-party sources, increasing hallucination risk.",
+        "code_fix_example": "<!-- Homepage hero \u2014 first visible sentence: -->\n<h1>[Brand Name]</h1>\n<p>[Brand Name] is a [Industry/Type] that [primary benefit/solution] for [target audience].\nExample: 'Lakhani is a footwear brand that provides high-quality durable shoes for professional athletes and daily wear.'</p>\n\n<!-- meta description (equally important): -->\n<meta name=\"description\" content=\"[Brand Name] is a [Industry/Type] that [measurable outcome/benefit] for [target audience].\">"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENG-001",
+      "skill_id": "engagement-ux-audit",
+      "title": "Major section headings lack anchor IDs for AI deep-link citations",
+      "severity": "high",
+      "impact_area": "on_site_engagement",
+      "evidence": "Audited 2 content section headings (H2/H3); 2 (100.0%) lack an HTML 'id' attribute. AI assistant citation links cannot deep-link directly to relevant sections. Unanchored samples: [H2: 'Our Brands'; H2: 'Our Brands'].",
+      "suggested_action": {
+        "summary": "Add unique, URL-safe 'id' attributes to all <h2> and <h3> section headings.",
+        "priority": "high",
+        "rationale": "When AI assistants quote a specific feature or benchmark, they generate URL fragment links (e.g. #benchmark-results). Without heading IDs, referred users land at the top of the page, feel disoriented, and immediately bounce.",
+        "code_fix_example": "<!-- Before: -->\n<h2>Enterprise Security & Compliance</h2>\n\n<!-- After: -->\n<h2 id=\"enterprise-security\">Enterprise Security & Compliance</h2>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENG-003",
+      "skill_id": "engagement-ux-audit",
+      "title": "Above-the-fold hero section lacks a descriptive value proposition (fails 3-second rule)",
+      "severity": "high",
+      "impact_area": "on_site_engagement",
+      "evidence": "Primary hero heading ('Featured Products') is missing or consists of an abstract marketing slogan. Visitors referred from AI citations need immediate confirmation within 3 seconds of who the brand is and what problem it solves. Hero text preview: 'Menu Shop Online About Us Product Catalog Contact Us Log In Sign Up Cart 0 Recently added item(s) \u00d7 You have no items in...'",
+      "suggested_action": {
+        "summary": "State a clear, descriptive value proposition in the primary above-the-fold headline.",
+        "priority": "high",
+        "rationale": "Users referred by AI assistant citations arrive with high intent but zero brand loyalty. If the hero section fails to explain the product in 3 seconds, bounce rates increase drastically.",
+        "code_fix_example": "<!-- Instead of: <h1>Unleash Tomorrow</h1> -->\n<h1>[Brand Name]: [Core Value Proposition]</h1>\n<p class=\"hero-subhead\">[One-sentence explanation of how the brand solves a specific problem for its target audience].</p>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-REND-003",
+      "skill_id": "render-extraction-audit",
+      "title": "Critical facts and diagrams trapped in images with missing or low-quality alt text",
+      "severity": "high",
+      "impact_area": "ai_discoverability",
+      "evidence": "Audited 98 informational images; 13/98 (13.3%) have defective alt attributes: 13 images completely lack alt attributes.",
+      "suggested_action": {
+        "summary": "Provide descriptive, factual alt text conveying the underlying information for all diagrams, charts, and product images.",
+        "priority": "high",
+        "rationale": "Multimodal and text-only AI models cannot parse data graphs, workflows, or tier matrices stored in raster images without descriptive alt text.",
+        "code_fix_example": "<img src=\"/assets/data-pipeline.png\" alt=\"Architecture diagram showing real-time event streaming pipeline processing 50k events per second\">"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENT-005",
+      "skill_id": "entity-semantics-audit",
+      "title": "sameAs links present but missing primary knowledge graph anchors (Wikidata / Wikipedia)",
+      "severity": "medium",
+      "impact_area": "ai_discoverability",
+      "evidence": "Found 2 sameAs link(s) referencing: Twitter/X, Facebook. None reference Wikidata or Wikipedia \u2014 the Tier-1 entity resolution sources used by AI knowledge graphs to disambiguate brand identities.",
+      "suggested_action": {
+        "summary": "Register the brand on Wikidata and/or Wikipedia, then add the authoritative entity URL(s) to the sameAs array.",
+        "priority": "medium",
+        "rationale": "AI assistants (ChatGPT, Perplexity, Claude) use Wikidata Q-items and Wikipedia articles as ground-truth entity anchors during knowledge graph lookup. Social and directory profile links alone cannot prevent brand name collisions with similarly-named entities.",
+        "code_fix_example": "// Add Wikidata and Wikipedia to existing sameAs array:\n\"sameAs\": [\n  \"https://www.wikidata.org/wiki/[Entity_ID]\",    // Tier-1 KG anchor\n  \"https://en.wikipedia.org/wiki/[Brand_Name]\", // Tier-1 KG anchor\n  // ... keep existing social / directory links below ...\n]"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-REND-007",
+      "skill_id": "render-extraction-audit",
+      "title": "Broken heading hierarchy with skipped outline levels",
+      "severity": "medium",
+      "impact_area": "ai_discoverability",
+      "evidence": "Detected 1 instances where headings skip outline levels: <h2> ('Our Brands') -> <h4> ('Customer Speaks').",
+      "suggested_action": {
+        "summary": "Restructure headings to follow a strict sequential hierarchy (H1 -> H2 -> H3) without skipping levels.",
+        "priority": "medium",
+        "rationale": "AI RAG pipelines build hierarchical chunk trees from headings. Skipping levels causes subtopics to be misattributed to incorrect parent topics.",
+        "code_fix_example": "<h1>Platform</h1>\n<h2>Core Engine</h2>\n<h3>Sub-Process Ingestion</h3> <!-- Do not jump directly from H1 to H3 -->"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-REND-009",
+      "skill_id": "render-extraction-audit",
+      "title": "Absence of semantic <main> or <article> landmark tags (div soup)",
+      "severity": "medium",
+      "impact_area": "ai_discoverability",
+      "evidence": "Document contains 0 <main> and 0 <article> landmarks. Core content is wrapped entirely in generic <div> containers.",
+      "suggested_action": {
+        "summary": "Wrap the primary textual substance in a semantic <main> landmark container.",
+        "priority": "medium",
+        "rationale": "Semantic HTML allows AI parsers to instantly separate substantive content from boilerplate navigation bars, cookie banners, and footers.",
+        "code_fix_example": "<main>\n  <h1>Product Overview</h1>\n  <article>...Substantive content...</article>\n</main>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-CRAWL-009",
+      "skill_id": "crawl-bot-access",
+      "title": "XML sitemap lacks fresh lastmod timestamps",
+      "severity": "medium",
+      "impact_area": "crawl_accessibility",
+      "evidence": "Evaluated 506 sitemap URL(s): 506 URL(s) with lastmod older than 180 days.",
+      "suggested_action": {
+        "summary": "Add automated <lastmod> timestamps updated whenever page content is republished.",
+        "priority": "medium",
+        "rationale": "AI crawlers prioritize fetching recently modified pages over stale entries.",
+        "code_fix_example": "<url>\n  <loc>https://example.com/docs</loc>\n  <lastmod>2026-09-01</lastmod>\n</url>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENT-009",
+      "skill_id": "entity-semantics-audit",
+      "title": "Missing locale and audience grounding in structured data and geo-meta tags",
+      "severity": "low",
+      "impact_area": "ai_discoverability",
+      "evidence": "No areaServed, inLanguage, or audience properties found in any JSON-LD block. No geo.position, geo.region, or ICBM meta tags detected. HTML lang attribute: \"en\". AI assistants performing location-sensitive queries receive no locale signal.",
+      "suggested_action": {
+        "summary": "Add areaServed and inLanguage to the Organization schema and include geo-region meta tags for local relevance signals.",
+        "priority": "low",
+        "rationale": "AI assistants performing location-sensitive queries (e.g., 'best CRM for UK businesses') use locale schema signals to filter and rank answers. Missing locale data reduces visibility in geo-targeted AI responses and local intent queries.",
+        "code_fix_example": "// In Organization JSON-LD:\n{\n  \"@type\": \"Organization\",\n  \"areaServed\": [\"US\", \"GB\", \"CA\"],\n  \"inLanguage\": \"en\",\n  \"audience\": {\n    \"@type\": \"Audience\",\n    \"audienceType\": \"Enterprise B2B\"\n  }\n}\n\n// In <head>:\n<meta name=\"geo.region\" content=\"US-CA\" />\n<meta name=\"geo.placename\" content=\"San Francisco, CA\" />\n<meta name=\"geo.position\" content=\"37.7749;-122.4194\" />"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-ENG-008",
+      "skill_id": "engagement-ux-audit",
+      "title": "Interactive buttons and links rely on dead anchor fragments (href=\"#\")",
+      "severity": "low",
+      "impact_area": "on_site_engagement",
+      "evidence": "Detected 3 anchor link(s) using placeholder 'href=\"#\"' or 'href=\"#top\"'. Clicking these elements resets scroll position without performing navigation.",
+      "suggested_action": {
+        "summary": "Replace dummy href='#' placeholders with proper semantic <button> elements or valid target routes.",
+        "priority": "low",
+        "rationale": "Placeholder hash links break accessibility and cause referred visitors to lose their reading position when clicking interactive UI elements.",
+        "code_fix_example": "<!-- Instead of: <a href=\"#\" class=\"btn\">Action</a> -->\n<button type=\"button\" class=\"btn\">Action</button>"
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-CRAWL-011",
+      "skill_id": "crawl-bot-access",
+      "title": "Missing modern AI discovery manifest (/llms.txt)",
+      "severity": "low",
+      "impact_area": "crawl_accessibility",
+      "evidence": "HTTP GET /llms.txt returned status 404. The site has not published an LLM manifest.",
+      "suggested_action": {
+        "summary": "Publish a standardized markdown /llms.txt file at the domain root.",
+        "priority": "low",
+        "rationale": "The /llms.txt standard provides a clean, token-efficient summary map for AI models without HTML boilerplate.",
+        "code_fix_example": "# Brand Name\n\n> Short 2-sentence description of the platform.\n\n## Documentation\n- [Quickstart](https://example.com/docs): Developer setup guide.\n- [API Reference](https://example.com/api): Core REST API spec."
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    },
+    {
+      "id": "F-CRAWL-012",
+      "skill_id": "crawl-bot-access",
+      "title": "Missing modern AI discovery manifest (/llms-full.txt)",
+      "severity": "low",
+      "impact_area": "crawl_accessibility",
+      "evidence": "HTTP GET /llms-full.txt returned status 404. The site has not published an LLM manifest.",
+      "suggested_action": {
+        "summary": "Publish a standardized markdown /llms-full.txt file at the domain root.",
+        "priority": "low",
+        "rationale": "The /llms.txt standard provides a clean, token-efficient summary map for AI models without HTML boilerplate.",
+        "code_fix_example": "# Brand Name\n\n> Short 2-sentence description of the platform.\n\n## Documentation\n- [Quickstart](https://example.com/docs): Developer setup guide.\n- [API Reference](https://example.com/api): Core REST API spec."
+      },
+      "page_url": "https://www.lakhanifootwear.com"
+    }
+  ],
+  "proactive_recommendations": [
+    {
+      "title": "AI Crawler User-Agent (GPTBot) is blocked by server (HTTP 429)",
+      "impact_area": "render_extraction",
+      "summary": "Configure Web Application Firewall (WAF) or CDN bot management rules to permit legitimate AI search crawlers.",
+      "implementation_hint": "# Cloudflare WAF Rule:\nAllow (http.user_agent contains \"GPTBot\")"
+    },
+    {
+      "title": "Missing datePublished / dateModified temporal metadata",
+      "impact_area": "ai_discoverability",
+      "summary": "Add datePublished and dateModified timestamps in JSON-LD structured data and Open Graph meta tags.",
+      "implementation_hint": "<!-- In <head>: -->\n<meta property=\"article:published_time\" content=\"2025-01-15T09:00:00Z\" />\n<meta property=\"article:modified_time\" content=\"2025-09-01T12:00:00Z\" />\n\n<!-- JSON-LD: -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebPage\",\n  \"datePublished\": \"2025-01-15T09:00:00Z\",\n  \"dateModified\": \"2025-09-01T12:00:00Z\"\n}\n</script>"
+    },
+    {
+      "title": "No clear quotable entity definition sentence found in top 200 words",
+      "impact_area": "ai_discoverability",
+      "summary": "Add a concise, self-contained definition sentence in the first paragraph of the homepage and in the meta description.",
+      "implementation_hint": "<!-- Homepage hero \u2014 first visible sentence: -->\n<h1>[Brand Name]</h1>\n<p>[Brand Name] is a [Industry/Type] that [primary benefit/solution] for [target audience].\nExample: 'Lakhani is a footwear brand that provides high-quality durable shoes for professional athletes and daily wear.'</p>\n\n<!-- meta description (equally important): -->\n<meta name=\"description\" content=\"[Brand Name] is a [Industry/Type] that [measurable outcome/benefit] for [target audience].\">"
+    }
+  ]
+}
