@@ -82,15 +82,25 @@ class VisibleTextExtractor(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs_dict = {k.lower(): (v.lower() if v else "") for k, v in attrs}
         role = attrs_dict.get("role", "")
+<<<<<<< HEAD
         cls_str = attrs_dict.get("class", "")
         elem_id = attrs_dict.get("id", "")
         cls_tokens = set(cls_str.split())
+=======
+        cls = attrs_dict.get("class", "")
+        elem_id = attrs_dict.get("id", "")
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
 
         is_nav_chrome = (
             tag.lower() in _SKIP_TAGS
             or role in ("navigation", "menubar", "banner", "complementary", "search")
+<<<<<<< HEAD
             or any(kw in cls_tokens for kw in ("nav", "menu", "sidebar", "vector-menu", "mw-navigation", "toc", "language"))
             or any(kw in elem_id.split('-') or kw in elem_id.split('_') for kw in ("nav", "menu", "sidebar", "mw-navigation", "toc", "p-lang"))
+=======
+            or any(kw in cls for kw in ("nav", "menu", "sidebar", "vector-menu", "mw-navigation", "toc", "language"))
+            or any(kw in elem_id for kw in ("nav", "menu", "sidebar", "mw-navigation", "toc", "p-lang"))
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
         )
 
         if is_nav_chrome:
@@ -110,6 +120,7 @@ class VisibleTextExtractor(HTMLParser):
         return " ".join(self.text_chunks)
 
 
+<<<<<<< HEAD
 class SimpleTextExtractor(HTMLParser):
     """Fallback extractor that only skips scripts and styles."""
     def __init__(self):
@@ -135,6 +146,8 @@ class SimpleTextExtractor(HTMLParser):
         return " ".join(self.text_chunks)
 
 
+=======
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
 # ── Meta description extraction ──────────────────────────────────────────────
 # Two patterns handle both attribute orderings
 _META_DESC_PATTERNS = [
@@ -288,6 +301,7 @@ def check_quotable_definition(raw_html, page_url=""):
         pass
 
     full_visible = parser.get_text()
+<<<<<<< HEAD
 
     # Fallback: If visible extractor was too aggressive (e.g. < 10 words), use simple extractor
     if len(full_visible.split()) < 10:
@@ -298,6 +312,8 @@ def check_quotable_definition(raw_html, page_url=""):
         except Exception:
             pass
 
+=======
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
     first_200, total_words = _first_n_words(full_visible, 200)
 
     # ── 3. Search for definition pattern ─────────────────────────────────────
@@ -369,11 +385,22 @@ def check_quotable_definition(raw_html, page_url=""):
                 ),
                 "code_fix_example": (
                     "<!-- Homepage hero — first visible sentence: -->\n"
+<<<<<<< HEAD
                     "<h1>[Brand Name]</h1>\n"
                     "<p>[Brand Name] is a [Industry/Type] that [primary benefit/solution] for [target audience].\n"
                     "Example: 'Lakhani is a footwear brand that provides high-quality durable shoes for professional athletes and daily wear.'</p>\n\n"
                     "<!-- meta description (equally important): -->\n"
                     "<meta name=\"description\" content=\"[Brand Name] is a [Industry/Type] that [measurable outcome/benefit] for [target audience].\">"
+=======
+                    "<h1>Acme Cloud Platform</h1>\n"
+                    "<p>Acme is an enterprise workflow automation platform that connects "
+                    "distributed teams, APIs, and data pipelines in a single low-code "
+                    "environment — used by 1,200 Fortune 500 teams.</p>\n\n"
+                    "<!-- meta description (equally important): -->\n"
+                    "<meta name=\"description\" content=\"Acme is an enterprise workflow "
+                    "automation platform that reduces operational latency by 70% for "
+                    "Fortune 500 companies.\">"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 ),
             },
         })
@@ -409,8 +436,14 @@ def check_quotable_definition(raw_html, page_url=""):
                     "<p>We deliver innovative, cutting-edge, best-in-class enterprise "
                     "solutions that transform businesses.</p>\n\n"
                     "<!-- Write: -->\n"
+<<<<<<< HEAD
                     "<p>[Brand Name] [actionable verb] [product/service], reducing [pain point] "
                     "by [X]% and [metric] from [Y] to [Z].</p>"
+=======
+                    "<p>Acme automates order fulfilment workflows for e-commerce companies, "
+                    "reducing processing errors by 94% and fulfilment time from 48 hours "
+                    "to under 4 hours.</p>"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 ),
             },
         })

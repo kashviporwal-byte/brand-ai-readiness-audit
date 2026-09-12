@@ -237,10 +237,17 @@ def check_locale_audience(raw_html, page_url=""):
                     "on hreflang for correct locale routing."
                 ),
                 "code_fix_example": (
+<<<<<<< HEAD
                     "<link rel=\"alternate\" hreflang=\"en\" href=\"https://[brand-domain].com/en/\" />\n"
                     "<link rel=\"alternate\" hreflang=\"de\" href=\"https://[brand-domain].com/de/\" />\n"
                     "<link rel=\"alternate\" hreflang=\"fr\" href=\"https://[brand-domain].com/fr/\" />\n"
                     "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://[brand-domain].com/\" />"
+=======
+                    "<link rel=\"alternate\" hreflang=\"en\" href=\"https://acme.com/en/\" />\n"
+                    "<link rel=\"alternate\" hreflang=\"de\" href=\"https://acme.com/de/\" />\n"
+                    "<link rel=\"alternate\" hreflang=\"fr\" href=\"https://acme.com/fr/\" />\n"
+                    "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://acme.com/\" />"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 ),
             },
         })
@@ -284,7 +291,11 @@ def check_locale_audience(raw_html, page_url=""):
                     "code_fix_example": (
                         "{\n"
                         "  \"@type\": \"Organization\",\n"
+<<<<<<< HEAD
                         "  \"name\": \"[Brand Name]\",\n"
+=======
+                        "  \"name\": \"Acme Corp\",\n"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                         "  \"areaServed\": [\"US\", \"GB\", \"DE\", \"FR\", \"AU\"],\n"
                         "  \"inLanguage\": [\"en\", \"de\", \"fr\"]\n"
                         "}"

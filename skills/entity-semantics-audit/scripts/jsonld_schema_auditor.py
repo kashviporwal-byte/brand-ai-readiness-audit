@@ -208,7 +208,11 @@ def check_jsonld_schema(raw_html, page_url=""):
                     "{\n"
                     "  \"@context\": \"https://schema.org\",\n"
                     "  \"@type\": \"Organization\",\n"
+<<<<<<< HEAD
                     "  \"name\": \"[Brand Name]\"\n"
+=======
+                    "  \"name\": \"Acme Corp\"\n"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                     "}\n"
                     "</script>"
                 ),
@@ -266,6 +270,7 @@ def check_jsonld_schema(raw_html, page_url=""):
                     "{\n"
                     "  \"@context\": \"https://schema.org\",\n"
                     "  \"@type\": \"Organization\",\n"
+<<<<<<< HEAD
                     "  \"name\": \"[Brand Name]\",\n"
                     "  \"description\": \"[Brand Name] is a [Industry/Type] that [primary benefit/solution] for [target audience].\",\n"
                     "  \"url\": \"https://[brand-domain].com\",\n"
@@ -273,6 +278,16 @@ def check_jsonld_schema(raw_html, page_url=""):
                     "  \"sameAs\": [\n"
                     "    \"https://www.wikidata.org/wiki/[Entity_ID]\",\n"
                     "    \"https://en.wikipedia.org/wiki/[Brand_Name]\"\n"
+=======
+                    "  \"name\": \"Acme Corp\",\n"
+                    "  \"description\": \"Acme Corp provides automated enterprise "
+                    "workflow orchestration for Fortune 500 teams.\",\n"
+                    "  \"url\": \"https://acme.com\",\n"
+                    "  \"logo\": \"https://acme.com/logo.png\",\n"
+                    "  \"sameAs\": [\n"
+                    "    \"https://www.wikidata.org/wiki/Q12345\",\n"
+                    "    \"https://en.wikipedia.org/wiki/Acme_Corp\"\n"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                     "  ]\n"
                     "}\n"
                     "</script>"
@@ -324,9 +339,16 @@ def check_jsonld_schema(raw_html, page_url=""):
                 "code_fix_example": (
                     "{\n"
                     "  \"@type\": \"Organization\",\n"
+<<<<<<< HEAD
                     "  \"name\": \"[Brand Name]\",\n"
                     "  \"description\": \"[Brand Name] [actionable verb] [product/service] for [target audience].\",\n"
                     "  \"url\": \"https://[brand-domain].com\",\n"
+=======
+                    "  \"name\": \"Acme Corp\",\n"
+                    "  \"description\": \"Acme Corp automates enterprise workflows "
+                    "for Fortune 500 companies.\",\n"
+                    "  \"url\": \"https://acme.com\",\n"
+>>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                     "  \"logo\": {\n"
                     "    \"@type\": \"ImageObject\",\n"
                     "    \"url\": \"https://acme.com/logo.png\",\n"
