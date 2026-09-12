@@ -10,6 +10,7 @@ Rule IDs: F-CRAWL-007, F-CRAWL-009, F-CRAWL-010
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 import urllib.request
+import urllib.error
 
 
 def audit_sitemap_content(sitemap_xml_str, sitemap_url=""):
@@ -103,6 +104,7 @@ def audit_sitemap_content(sitemap_xml_str, sitemap_url=""):
         })
 
     # Check broken URLs in sitemap sampling (F-CRAWL-010)
+    # Note: Only count explicit 404/410 status codes as broken to avoid false positives on 403/WAF blocks
     broken_urls = []
     sample_urls = []
     for u in urls[:5]:
@@ -114,10 +116,11 @@ def audit_sitemap_content(sitemap_xml_str, sitemap_url=""):
         try:
             req = urllib.request.Request(surl, headers={"User-Agent": "Mozilla/5.0"}, method="HEAD")
             with urllib.request.urlopen(req, timeout=3.0) as resp:
-                if resp.status >= 400:
+                if resp.status in (404, 410):
                     broken_urls.append(f"{surl} ({resp.status})")
         except urllib.error.HTTPError as e:
-            broken_urls.append(f"{surl} ({e.code})")
+            if e.code in (404, 410):
+                broken_urls.append(f"{surl} ({e.code})")
         except Exception:
             pass
 

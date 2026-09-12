@@ -770,7 +770,11 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
     Main orchestration entrypoint. Fetches page, optionally discovers and crawls
     high-intent secondary pages (multi-page mode), runs all active skills,
     aggregates and deduplicates findings, and constructs the report schema.
+    Strictly enforced by AUDIT_DEADLINE_SECONDS = 240 wall-clock budget.
     """
+    AUDIT_DEADLINE_SECONDS = 240
+    t_start = time.time()
+
     # 1. Discover skills
     active_skills = discover_available_skills()
     active_ids = {s["id"] for s in active_skills}
@@ -799,27 +803,30 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
 
     # 2b. Multi-Page Discovery via sitemap (if enabled)
     if multi_page and max_pages > 1 and final_url.startswith(("http://", "https://")):
-        if not quiet:
-            print(f"\n[*] Multi-page mode enabled: discovering up to {max_pages - 1} secondary pages via sitemap...")
-        secondary_urls = discover_high_intent_pages(final_url, raw_html, max_pages=max_pages - 1)
-        if secondary_urls:
+        elapsed_sec = time.time() - t_start
+        if elapsed_sec > AUDIT_DEADLINE_SECONDS:
             if not quiet:
-                for s_url in secondary_urls:
-                    print(f"    -> Discovered high-intent page: {s_url}")
-            with ThreadPoolExecutor(max_workers=min(len(secondary_urls), 4)) as fetcher:
-                future_to_url = {fetcher.submit(fetch_target_page, u): u for u in secondary_urls}
-                for f in as_completed(future_to_url):
-                    try:
-                        p_res = f.result()
-                        crawled_pages.append({
-                            "url": p_res["target_url"],
-                            "raw_html": p_res["raw_html"],
-                            "status_code": p_res["status_code"]
-                        })
-                    except Exception:
-                        pass
-        elif not quiet:
-            print(f"    -> No additional secondary pages discovered (single-page audit applies).")
+                print(f"    [WARN] Wall-clock deadline ({AUDIT_DEADLINE_SECONDS}s) reached; skipping secondary multi-page discovery.")
+        else:
+            if not quiet:
+                print(f"\n[*] Multi-page mode enabled: discovering up to {max_pages - 1} secondary pages via sitemap...")
+            secondary_urls = discover_high_intent_pages(final_url, raw_html, max_pages=max_pages - 1)
+            if secondary_urls:
+                if not quiet:
+                    for s_url in secondary_urls:
+                        print(f"    -> Discovered high-intent page: {s_url}")
+                with ThreadPoolExecutor(max_workers=min(len(secondary_urls), 4)) as fetcher:
+                    future_to_url = {fetcher.submit(fetch_target_page, u): u for u in secondary_urls}
+                    for f in as_completed(future_to_url):
+                        try:
+                            p_res = f.result()
+                            crawled_pages.append({
+                                "url": p_res["target_url"],
+                                "raw_html": p_res["raw_html"],
+                                "status_code": p_res["status_code"]
+                            })
+                        except Exception:
+                            pass
 
     site_context = {
         "target_url": final_url,

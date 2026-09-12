@@ -89,7 +89,11 @@ class InterstitialParser(HTMLParser):
             })
 
         if "position:fixed" in style or "position:absolute" in style:
-            if any(k in style for k in ("inset:0", "top:0", "left:0", "width:100%", "height:100%", "width:100vw", "height:100vh")):
+            has_full_width = any(k in style for k in ("width:100%", "width:100vw", "inset:0", "left:0;right:0", "right:0;left:0"))
+            has_full_height = any(k in style for k in ("height:100%", "height:100vh", "inset:0", "top:0;bottom:0", "bottom:0;top:0"))
+            has_inset_zero = "inset:0" in style or ("top:0" in style and "bottom:0" in style and "left:0" in style and "right:0" in style)
+
+            if (has_full_width and has_full_height) or has_inset_zero:
                 self.inline_blocking_styles.append(f"{tag_lower} style=\'{style[:40]}\'")
 
     def handle_endtag(self, tag):

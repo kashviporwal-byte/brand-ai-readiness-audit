@@ -29,7 +29,7 @@ def _strip_html_text(html):
     return text.split()
 
 
-def check_ua_cloaking(target_url, browser_html=""):
+def check_ua_cloaking(target_url, browser_html="", site_context=None):
     """
     Checks for UA-based differential rendering or cloaking between standard browser UA and GPTBot UA.
     Enforces robots.txt permission gating prior to fetching under GPTBot UA.
@@ -39,20 +39,30 @@ def check_ua_cloaking(target_url, browser_html=""):
         return findings
 
     # Check permission via robots.txt first (Politeness & Guardrail Gate)
-    parsed = urlparse(target_url)
-    base_url = f"{parsed.scheme}://{parsed.netloc}/"
-    robots_url = urljoin(base_url, "robots.txt")
     rp = urllib.robotparser.RobotFileParser()
     can_fetch_gptbot = True
-    try:
-        req_r = urllib.request.Request(robots_url, headers={"User-Agent": BROWSER_UA})
-        with urllib.request.urlopen(req_r, timeout=3.0) as resp_r:
-            content = resp_r.read().decode("utf-8", errors="replace")
-            rp.parse(content.splitlines())
-            if not rp.can_fetch("GPTBot", target_url):
-                can_fetch_gptbot = False
-    except Exception:
-        can_fetch_gptbot = True
+    
+    robots_content = None
+    if isinstance(site_context, dict) and "robots_content" in site_context:
+        robots_content = site_context.get("robots_content")
+
+    if robots_content is not None:
+        rp.parse(robots_content.splitlines())
+        if not rp.can_fetch("GPTBot", target_url):
+            can_fetch_gptbot = False
+    else:
+        parsed = urlparse(target_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}/"
+        robots_url = urljoin(base_url, "robots.txt")
+        try:
+            req_r = urllib.request.Request(robots_url, headers={"User-Agent": BROWSER_UA})
+            with urllib.request.urlopen(req_r, timeout=3.0) as resp_r:
+                content = resp_r.read().decode("utf-8", errors="replace")
+                rp.parse(content.splitlines())
+                if not rp.can_fetch("GPTBot", target_url):
+                    can_fetch_gptbot = False
+        except Exception:
+            can_fetch_gptbot = True
 
     if not can_fetch_gptbot:
         # GPTBot is disallowed by robots.txt; report permission signal without making unauthorized fetch

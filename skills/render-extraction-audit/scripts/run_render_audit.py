@@ -45,7 +45,8 @@ def audit_render_extraction(site_context_or_html, page_url=""):
     findings.extend(check_hydration_gap(raw_html, target_url))
     findings.extend(check_non_text_elements(raw_html, target_url))
     findings.extend(check_semantic_hierarchy(raw_html, target_url))
-    findings.extend(check_ua_cloaking(target_url, raw_html))
+    site_ctx = site_context_or_html if isinstance(site_context_or_html, dict) else None
+    findings.extend(check_ua_cloaking(target_url, raw_html, site_context=site_ctx))
 
     return findings
 
