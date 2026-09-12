@@ -102,4 +102,39 @@ def audit_sitemap_content(sitemap_xml_str, sitemap_url=""):
             }
         })
 
+    # Check broken URLs in sitemap sampling (F-CRAWL-010)
+    broken_urls = []
+    sample_urls = []
+    for u in urls[:5]:
+        loc = u.find("sm:loc", ns) if has_ns else u.find("loc")
+        if loc is not None and loc.text and loc.text.strip().startswith(("http://", "https://")):
+            sample_urls.append(loc.text.strip())
+
+    for surl in sample_urls[:3]:
+        try:
+            req = urllib.request.Request(surl, headers={"User-Agent": "Mozilla/5.0"}, method="HEAD")
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                if resp.status >= 400:
+                    broken_urls.append(f"{surl} ({resp.status})")
+        except urllib.error.HTTPError as e:
+            broken_urls.append(f"{surl} ({e.code})")
+        except Exception:
+            pass
+
+    if broken_urls:
+        findings.append({
+            "id": "F-CRAWL-010",
+            "skill_id": "crawl-bot-access",
+            "title": "XML sitemap contains broken or unreachable URLs",
+            "severity": "high",
+            "impact_area": "crawl_accessibility",
+            "evidence": f"Sampled sitemap URLs returned HTTP errors: {', '.join(broken_urls)}.",
+            "suggested_action": {
+                "summary": "Remove dead/404 URLs from sitemap.xml to preserve crawler budget.",
+                "priority": "high",
+                "rationale": "Sitemaps with broken links waste AI crawler budget and decrease domain trust scores.",
+                "code_fix_example": "<!-- Remove 404 entry: -->\n<!-- <url><loc>https://example.com/deleted-page</loc></url> -->"
+            }
+        })
+
     return findings

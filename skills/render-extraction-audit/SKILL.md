@@ -40,7 +40,11 @@ Use this skill when diagnosing why AI assistants (ChatGPT, Claude, Perplexity, S
    - Detect heading level skips (e.g. `<h1>` jumping directly to `<h3>` or `<h4>`).
    - Audit semantic landmark containers (`<main>`, `<article>`) vs generic `<div>` wrappers.
    - Evaluate text-to-HTML density ratio (< 5% text-to-code triggers `F-REND-010`).
-4. **Compile & Format Output**:
+4. **Audit UA-Based Cloaking & Differential Rendering**:
+   - Run `scripts/ua_cloaking_auditor.py` to compare standard browser User-Agent rendering with `User-Agent: GPTBot/1.0`.
+   - Strictly gated by `urllib.robotparser` to verify `robots.txt` permission prior to making secondary requests.
+   - Detects HTTP 403/429 bot blocks or payload stripping targeting AI search engine crawlers (`F-REND-014`).
+5. **Compile & Format Output**:
    - Invoke `scripts/run_render_audit.py` to aggregate all findings into the contest JSON schema.
 
 ## Output

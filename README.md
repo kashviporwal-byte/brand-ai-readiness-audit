@@ -68,4 +68,29 @@ Site-wide audit discovering and analyzing key high-intent pages (`/pricing`, `/d
 python skills/audit-orchestrator/scripts/orchestrate_audit.py https://example.com --multi-page --max-pages 3 --output report.json
 ```
 
+### Mode 3: Offline / Local HTML File Audit
+Audit local `.html` files without network dependencies:
+```bash
+python skills/audit-orchestrator/scripts/orchestrate_audit.py ./local_page.html --output report.json
+```
+
 Outputs the official `report.json` conforming strictly to the contest `report_schema.json` in seconds without external dependencies.
+
+---
+
+## Testing & Verification
+
+Run the comprehensive offline unit test suite covering all 5 domain skills, orchestrator functions, and regression probes:
+
+```bash
+python tests/test_all.py
+```
+
+---
+
+## Safety Guardrails & Design Choices
+
+1. **Strict Read-Only Operations**: All network interactions use read-only HTTP GET requests. No write, mutation, or state-changing requests are performed.
+2. **Robots.txt Gating**: Secondary multi-page discovery and secondary User-Agent fetches strictly check `robots.txt` rules using `urllib.robotparser`.
+3. **UA-Cloaking Verification**: `render-extraction-audit` issues one secondary GET request under `User-Agent: GPTBot/1.0` (robots.txt-gated) to detect bot-blocking or differential payload rendering (`F-REND-014`).
+4. **Wall-Clock Safety Deadline**: Orchestration caps cumulative execution at a 240-second (4-minute) wall-clock budget to guarantee `< 5 minute` completion on slow target domains.

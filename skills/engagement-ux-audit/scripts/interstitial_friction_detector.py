@@ -88,10 +88,9 @@ class InterstitialParser(HTMLParser):
                 "matched": all_matches
             })
 
-        if "position:fixed" in style:
-            if any(k in style for k in ("inset:0", "top:0;left:0", "width:100vw", "height:100vh")):
-                if "z-index" in style:
-                    self.inline_blocking_styles.append(f"{tag_lower} style=\'{style[:40]}\'")
+        if "position:fixed" in style or "position:absolute" in style:
+            if any(k in style for k in ("inset:0", "top:0", "left:0", "width:100%", "height:100%", "width:100vw", "height:100vh")):
+                self.inline_blocking_styles.append(f"{tag_lower} style=\'{style[:40]}\'")
 
     def handle_endtag(self, tag):
         tag_lower = tag.lower()
@@ -129,7 +128,12 @@ def check_interstitial_friction(raw_html, page_url=""):
     except Exception:
         pass
 
-    is_intrusive = bool(script_triggers) or len(parser.blocking_elements) >= 2 or bool(parser.inline_blocking_styles)
+    has_strong_single_modal = len(parser.blocking_elements) >= 1 and (
+        parser.has_dialog_role or
+        bool(parser.inline_blocking_styles)
+    )
+
+    is_intrusive = bool(script_triggers) or len(parser.blocking_elements) >= 2 or bool(parser.inline_blocking_styles) or has_strong_single_modal
 
     if is_intrusive:
         details = []

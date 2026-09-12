@@ -12,9 +12,13 @@ import re
 
 def check_http_headers_and_meta(headers_dict=None, raw_html=None, page_url=""):
     findings = []
-    headers_dict = headers_dict or {}
+    headers_dict = headers_dict if isinstance(headers_dict, dict) else {}
 
-    x_robots = headers_dict.get("X-Robots-Tag", headers_dict.get("x-robots-tag", "")).lower()
+    x_robots = ""
+    for k, v in headers_dict.items():
+        if k.lower() == "x-robots-tag":
+            x_robots = (v or "").lower()
+            break
 
     # Also parse <meta name="robots"> from HTML if provided
     meta_robots = ""

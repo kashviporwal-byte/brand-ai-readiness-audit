@@ -71,22 +71,27 @@ def check_ua_cloaking(target_url, browser_html=""):
             bot_bytes = resp.read()
             charset = resp.headers.get_content_charset() or "utf-8"
             bot_html = bot_bytes.decode(charset, errors="replace")
+    except urllib.error.HTTPError as e:
+        # Only report cloaking if server explicitly returns 403, 429, or 503 bot block
+        if e.code in (403, 429, 503):
+            findings.append({
+                "id": "F-REND-014",
+                "skill_id": "render-extraction-audit",
+                "title": f"AI Crawler User-Agent (GPTBot) is blocked by server (HTTP {e.code})",
+                "severity": "critical",
+                "impact_area": "render_extraction",
+                "evidence": f"Target URL '{target_url}' returned HTTP {e.code} when requested with User-Agent 'GPTBot/1.0' while standard browser UA succeeded.",
+                "suggested_action": {
+                    "summary": "Configure Web Application Firewall (WAF) or CDN bot management rules to permit legitimate AI search crawlers.",
+                    "priority": "high",
+                    "rationale": "Cloudflare or WAF User-Agent challenges targeting AI bots prevent ChatGPT and SearchGPT from retrieving brand content.",
+                    "code_fix_example": "# Cloudflare WAF Rule:\nAllow (http.user_agent contains \"GPTBot\")"
+                }
+            })
+            return findings
+        return findings
     except Exception:
-        # If request errors specifically for GPTBot UA (e.g. HTTP 403 Bot Block)
-        findings.append({
-            "id": "F-REND-014",
-            "skill_id": "render-extraction-audit",
-            "title": "AI Crawler User-Agent (GPTBot) is blocked or served differential error page",
-            "severity": "critical",
-            "impact_area": "render_extraction",
-            "evidence": f"Target URL '{target_url}' returned HTTP error/block when requested with User-Agent 'GPTBot/1.0' while standard browser UA succeeded.",
-            "suggested_action": {
-                "summary": "Configure Web Application Firewall (WAF) or CDN bot management rules to permit legitimate AI search crawlers.",
-                "priority": "high",
-                "rationale": "Cloudflare or WAF User-Agent challenges targeting AI bots prevent ChatGPT and SearchGPT from retrieving brand content.",
-                "code_fix_example": "# Cloudflare WAF Rule:\nAllow (http.user_agent contains \"GPTBot\")"
-            }
-        })
+        # Generic network timeout, connection error, or DNS failure -> suppress to prevent false positive accusations
         return findings
 
     c_words = len(_strip_html_text(bot_html))

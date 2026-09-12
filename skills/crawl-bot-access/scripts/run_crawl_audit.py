@@ -73,25 +73,33 @@ def audit_crawl_bot_access(site_context_or_url, page_url=""):
     if robots_disallowed:
         findings.extend(check_target_url_robots_disallowed(target_url, True))
 
-    parsed = urlparse(target_url)
-    base_url = f"{parsed.scheme}://{parsed.netloc}/"
-
     # 1. Check HTTP Headers on target page
     header_findings = check_http_headers_and_meta(http_headers, raw_html, target_url)
     findings.extend(header_findings)
 
-    # 2. Fetch robots.txt and llms manifests in parallel
+    # If target_url is a local filesystem file or not a HTTP(S) scheme, skip network-bound checks gracefully
+    if not target_url.startswith(("http://", "https://")):
+        return findings
+
+    parsed = urlparse(target_url)
+    base_url = f"{parsed.scheme}://{parsed.netloc}/"
+
+    # Check if robots.txt content was already cached in site_context
+    cached_robots = site_context_or_url.get("robots_content") if isinstance(site_context_or_url, dict) else None
+
+    # 2. Fetch robots.txt and llms manifests in parallel (or reuse cached robots)
     robots_url = urljoin(base_url, "robots.txt")
     llms_url = urljoin(base_url, "llms.txt")
     llms_full_url = urljoin(base_url, "llms-full.txt")
 
     from concurrent.futures import ThreadPoolExecutor
 
-    fetch_jobs = {
-        "robots": robots_url,
-        "llms": llms_url,
-        "llms_full": llms_full_url,
-    }
+    fetch_jobs = {}
+    if cached_robots is None:
+        fetch_jobs["robots"] = robots_url
+    fetch_jobs["llms"] = llms_url
+    fetch_jobs["llms_full"] = llms_full_url
+
     fetch_results = {}
 
     with ThreadPoolExecutor(max_workers=3) as executor:
@@ -103,7 +111,11 @@ def audit_crawl_bot_access(site_context_or_url, page_url=""):
             except Exception:
                 fetch_results[key] = (None, 0, {})
 
-    robots_content, robots_status, _ = fetch_results.get("robots", (None, 0, {}))
+    if cached_robots is not None:
+        robots_content = cached_robots
+        robots_status = 200
+    else:
+        robots_content, robots_status, _ = fetch_results.get("robots", (None, 0, {}))
 
     # Determine sitemap URL: check if robots.txt explicitly declares Sitemap:
     sitemap_from_robots = None

@@ -25,6 +25,7 @@ def check_robots_txt(robots_content, base_url=""):
     groups = []
     current_agents = set()
     current_disallows = set()
+    current_allows = set()
     in_directive_block = False
 
     for line in robots_content.splitlines():
@@ -39,39 +40,67 @@ def check_robots_txt(robots_content, base_url=""):
             agent_name = line.split(":", 1)[1].strip().lower()
             if in_directive_block:
                 if current_agents:
-                    groups.append((current_agents, current_disallows))
+                    groups.append((current_agents, current_disallows, current_allows))
                 current_agents = set()
                 current_disallows = set()
+                current_allows = set()
                 in_directive_block = False
             current_agents.add(agent_name)
         elif lower_line.startswith("disallow:") or lower_line.startswith("allow:"):
             in_directive_block = True
             if lower_line.startswith("disallow:"):
                 path = line.split(":", 1)[1].strip()
-                current_disallows.add(path)
+                if path:
+                    current_disallows.add(path)
+            elif lower_line.startswith("allow:"):
+                path = line.split(":", 1)[1].strip()
+                if path:
+                    current_allows.add(path)
 
     if current_agents:
-        groups.append((current_agents, current_disallows))
+        groups.append((current_agents, current_disallows, current_allows))
+
+    # Helper: Check if a specific agent is disallowed at root level '/'
+    def is_agent_blocked_at_root(bot_name):
+        # 1. Look for specific agent group first (most specific match)
+        for agents, disallows, allows in groups:
+            if bot_name in agents:
+                if any(p in ("/", "/*") for p in allows):
+                    return False
+                if any(p in ("/", "/*") for p in disallows):
+                    return True
+
+        # 2. Fallback to wildcard '*' group
+        for agents, disallows, allows in groups:
+            if "*" in agents:
+                if any(p in ("/", "/*") for p in allows):
+                    return False
+                if any(p in ("/", "/*") for p in disallows):
+                    return True
+
+        return False
+
+    # Evaluate wildcard block
+    wildcard_has_full_block = False
+    for agents, disallows, allows in groups:
+        if "*" in agents and any(p in ("/", "/*") for p in disallows):
+            if not any(p in ("/", "/*") for p in allows):
+                wildcard_has_full_block = True
 
     blocked_t1 = set()
     blocked_t2 = set()
-    global_block = False
 
-    for agents, disallows in groups:
-        is_wildcard = "*" in agents
-        has_full_block = any(p in ("/", "/*") for p in disallows)
+    for bot in TIER_1_BOTS:
+        if is_agent_blocked_at_root(bot):
+            blocked_t1.add(bot)
 
-        if is_wildcard and has_full_block:
-            global_block = True
+    for bot in TIER_2_BOTS:
+        if is_agent_blocked_at_root(bot):
+            blocked_t2.add(bot)
 
-        for agent in agents:
-            if agent == "*":
-                continue
-            if has_full_block:
-                if agent in TIER_1_BOTS:
-                    blocked_t1.add(agent)
-                elif agent in TIER_2_BOTS:
-                    blocked_t2.add(agent)
+    # Global block only fires if wildcard block exists AND at least one Tier-1 bot is blocked
+    # (i.e. if all Tier-1 bots have explicit Allow: / overrides, it's not a global block)
+    global_block = wildcard_has_full_block and (len(blocked_t1) == len(TIER_1_BOTS))
 
     # 1. F-CRAWL-001: Global Block
     if global_block:
@@ -81,7 +110,7 @@ def check_robots_txt(robots_content, base_url=""):
             "title": "Global crawl block in robots.txt disallows all AI search crawlers",
             "severity": "critical",
             "impact_area": "crawl_accessibility",
-            "evidence": "Detected 'User-agent: * Disallow: /' in robots.txt. All AI search engine bots are completely blocked.",
+            "evidence": "Detected 'User-agent: * Disallow: /' in robots.txt without specific AI bot allowances. All AI search engine bots are completely blocked.",
             "suggested_action": {
                 "summary": "Remove global Disallow: / directive and provide granular access controls for AI crawlers.",
                 "priority": "high",
@@ -90,7 +119,7 @@ def check_robots_txt(robots_content, base_url=""):
             }
         })
 
-    # 2. F-CRAWL-002: Tier-1 AI Bot Block
+    # 2. F-CRAWL-002: Tier-1 AI Bot Block (Only if not a total global block, or if specific T1 bots blocked)
     elif blocked_t1:
         bot_list = ", ".join(sorted(blocked_t1))
         findings.append({
@@ -99,7 +128,7 @@ def check_robots_txt(robots_content, base_url=""):
             "title": f"Tier-1 AI assistant crawlers explicitly blocked in robots.txt ({bot_list})",
             "severity": "critical",
             "impact_area": "crawl_accessibility",
-            "evidence": f"Found explicit disallow directives for primary AI citation engines: {bot_list}.",
+            "evidence": f"Found disallow directives applying to primary AI citation engines: {bot_list}.",
             "suggested_action": {
                 "summary": f"Update robots.txt to permit indexing by Tier-1 AI crawlers ({bot_list}).",
                 "priority": "high",

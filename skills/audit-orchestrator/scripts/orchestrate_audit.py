@@ -156,7 +156,9 @@ def fetch_target_page(target_url, timeout=10.0):
     t0 = time.time()
 
     # Local file support
-    if os.path.isfile(target_url):
+    if os.path.isfile(target_url) or (not target_url.startswith(("http://", "https://")) and os.path.exists(target_url)):
+        if not os.path.exists(target_url):
+            raise FileNotFoundError(f"Target local file not found: '{target_url}'")
         with open(target_url, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
         return {
@@ -165,8 +167,14 @@ def fetch_target_page(target_url, timeout=10.0):
             "status_code": 200,
             "fetch_time": round(time.time() - t0, 3),
             "headers": {"content-type": "text/html"},
-            "robots_disallowed": False
+            "robots_disallowed": False,
+            "robots_content": "",
+            "is_local_file": True
         }
+
+    if not target_url.startswith(("http://", "https://")) and not os.path.exists(target_url):
+        if target_url.endswith((".html", ".htm")) or "/" in target_url or "\\" in target_url:
+            raise FileNotFoundError(f"Target local HTML file not found: '{target_url}'")
 
     # Ensure URL has protocol
     normalized_url = target_url
@@ -175,14 +183,15 @@ def fetch_target_page(target_url, timeout=10.0):
 
     # Lightweight robots.txt check for primary URL
     robots_disallowed = False
+    robots_content = ""
     try:
         parsed = urlparse(normalized_url)
         robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
         rp = urllib.robotparser.RobotFileParser()
         req_r = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
         with urllib.request.urlopen(req_r, timeout=3.0) as resp_r:
-            r_content = resp_r.read().decode("utf-8", errors="replace")
-            rp.parse(r_content.splitlines())
+            robots_content = resp_r.read().decode("utf-8", errors="replace")
+            rp.parse(robots_content.splitlines())
             if not rp.can_fetch(DEFAULT_USER_AGENT, normalized_url):
                 robots_disallowed = True
     except Exception:
@@ -202,7 +211,8 @@ def fetch_target_page(target_url, timeout=10.0):
                 "status_code": response.status,
                 "fetch_time": round(time.time() - t0, 3),
                 "headers": dict(response.headers),
-                "robots_disallowed": robots_disallowed
+                "robots_disallowed": robots_disallowed,
+                "robots_content": robots_content
             }
     except urllib.error.HTTPError as e:
         raw_bytes = e.read()
@@ -213,7 +223,8 @@ def fetch_target_page(target_url, timeout=10.0):
             "status_code": e.code,
             "fetch_time": round(time.time() - t0, 3),
             "headers": dict(e.headers) if hasattr(e, "headers") else {},
-            "robots_disallowed": robots_disallowed
+            "robots_disallowed": robots_disallowed,
+            "robots_content": robots_content
         }
     except Exception as e:
         raise RuntimeError(f"Network error fetching {normalized_url}: {e}")
@@ -817,7 +828,8 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
         "status_code": page_data["status_code"],
         "fetch_time": page_data["fetch_time"],
         "headers": page_data["headers"],
-        "robots_disallowed": page_data.get("robots_disallowed", False)
+        "robots_disallowed": page_data.get("robots_disallowed", False),
+        "robots_content": page_data.get("robots_content", "")
     }
 
     # 3. Fan out to active skills in parallel for primary page
