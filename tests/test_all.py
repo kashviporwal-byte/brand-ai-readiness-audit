@@ -58,6 +58,28 @@ Allow: /
         f_ids = [f["id"] for f in findings]
         self.assertIn("F-ENG-005", f_ids, "Should detect single full-screen modal overlay as intrusive friction")
 
+    def test_sticky_header_no_false_positive_overlay(self):
+        """Bug #4 Regression (Negative Case): Sticky navigation headers & CTA bars must NOT trigger F-ENG-005."""
+        html_sticky_header = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                header.sticky-nav { position: fixed; top: 0; left: 0; width: 100%; height: 70px; z-index: 1000; }
+                div.fixed-cta-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 999; }
+            </style>
+        </head>
+        <body>
+            <header class="sticky-nav"><h1>Site Brand</h1></header>
+            <main><p>Content goes here...</p></main>
+            <div class="fixed-cta-bar"><button>Subscribe</button></div>
+        </body>
+        </html>
+        """
+        findings = check_interstitial_friction(html_sticky_header, page_url="https://example.com")
+        f_ids = [f["id"] for f in findings]
+        self.assertNotIn("F-ENG-005", f_ids, "Sticky navigation header and bottom CTA bar should NOT trigger F-ENG-005 modal overlay finding")
+
     def test_ua_cloaking_generic_timeout_suppressed(self):
         """Bug #5 Regression: Generic network exception should NOT fire critical F-REND-014."""
         # Non-HTTP(S) local target url skips fetch cleanly

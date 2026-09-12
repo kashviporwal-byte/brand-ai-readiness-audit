@@ -535,7 +535,7 @@ def extract_navigation_links(raw_html, base_url, final_url):
     return nav_links
 
 
-def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
+def discover_high_intent_pages(target_url, raw_html="", max_pages=4, robots_content=None):
     """
     Adaptive Representative Page Selection Engine v2.0
     ===================================================
@@ -579,13 +579,12 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
     robots_url = urljoin(base_url, "robots.txt")
     robot_parser = urllib.robotparser.RobotFileParser()
     has_robot_rules = False
-    try:
-        req = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            content = resp.read().decode("utf-8", errors="replace")
-            robot_parser.parse(content.splitlines())
+
+    if robots_content:
+        try:
+            robot_parser.parse(robots_content.splitlines())
             has_robot_rules = True
-            for line in content.splitlines():
+            for line in robots_content.splitlines():
                 line_str = line.strip()
                 if line_str.lower().startswith("sitemap:"):
                     declared = line_str.split(":", 1)[1].strip()
@@ -593,8 +592,25 @@ def discover_high_intent_pages(target_url, raw_html="", max_pages=4):
                         sitemap_url = declared if declared.startswith(("http://", "https://")) \
                             else urljoin(base_url, declared.lstrip("/"))
                         break
-    except Exception:
-        has_robot_rules = False
+        except Exception:
+            has_robot_rules = False
+    else:
+        try:
+            req = urllib.request.Request(robots_url, headers={"User-Agent": DEFAULT_USER_AGENT})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                content = resp.read().decode("utf-8", errors="replace")
+                robot_parser.parse(content.splitlines())
+                has_robot_rules = True
+                for line in content.splitlines():
+                    line_str = line.strip()
+                    if line_str.lower().startswith("sitemap:"):
+                        declared = line_str.split(":", 1)[1].strip()
+                        if declared:
+                            sitemap_url = declared if declared.startswith(("http://", "https://")) \
+                                else urljoin(base_url, declared.lstrip("/"))
+                            break
+        except Exception:
+            has_robot_rules = False
 
     candidate_urls = set(nav_links)
 
@@ -810,7 +826,7 @@ def run_full_audit(target_url, quiet=False, multi_page=False, max_pages=5):
         else:
             if not quiet:
                 print(f"\n[*] Multi-page mode enabled: discovering up to {max_pages - 1} secondary pages via sitemap...")
-            secondary_urls = discover_high_intent_pages(final_url, raw_html, max_pages=max_pages - 1)
+            secondary_urls = discover_high_intent_pages(final_url, raw_html, max_pages=max_pages - 1, robots_content=page_data.get("robots_content", ""))
             if secondary_urls:
                 if not quiet:
                     for s_url in secondary_urls:
