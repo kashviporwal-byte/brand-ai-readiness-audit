@@ -234,13 +234,8 @@ def check_heading_anchors(raw_html, page_url=""):
             "severity": "low",
             "impact_area": "on_site_engagement",
             "evidence": (
-<<<<<<< HEAD
                 f"Detected {len(parser.dead_fragment_links)} anchor link(s) using placeholder 'href=\"#\"' "
                 f"or 'href=\"#top\"'. Clicking these elements resets scroll position without performing navigation."
-=======
-                f"Detected {len(parser.dead_fragment_links)} anchor link(s) using placeholder 'href="#"' "
-                f"or 'href="#top"'. Clicking these elements resets scroll position without performing navigation."
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             ),
             "suggested_action": {
                 "summary": "Replace dummy href='#' placeholders with proper semantic <button> elements or valid target routes.",

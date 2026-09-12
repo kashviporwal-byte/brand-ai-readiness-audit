@@ -270,7 +270,6 @@ def check_sameas_disambiguation(raw_html, page_url=""):
                 "code_fix_example": (
                     "{\n"
                     "  \"@type\": \"Organization\",\n"
-<<<<<<< HEAD
                     "  \"name\": \"[Brand Name]\",\n"
                     "  \"sameAs\": [\n"
                     "    \"https://www.wikidata.org/wiki/[Entity_ID]\",\n"
@@ -278,15 +277,6 @@ def check_sameas_disambiguation(raw_html, page_url=""):
                     "    \"https://www.crunchbase.com/organization/[brand-slug]\",\n"
                     "    \"https://www.linkedin.com/company/[brand-slug]\",\n"
                     "    \"https://github.com/[brand-slug]\"\n"
-=======
-                    "  \"name\": \"Acme Corp\",\n"
-                    "  \"sameAs\": [\n"
-                    "    \"https://www.wikidata.org/wiki/Q12345\",\n"
-                    "    \"https://en.wikipedia.org/wiki/Acme_Corp\",\n"
-                    "    \"https://www.crunchbase.com/organization/acme-corp\",\n"
-                    "    \"https://www.linkedin.com/company/acme-corp\",\n"
-                    "    \"https://github.com/acme-corp\"\n"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                     "  ]\n"
                     "}"
                 ),
@@ -325,13 +315,8 @@ def check_sameas_disambiguation(raw_html, page_url=""):
                 "code_fix_example": (
                     "// Add Wikidata and Wikipedia to existing sameAs array:\n"
                     "\"sameAs\": [\n"
-<<<<<<< HEAD
                     "  \"https://www.wikidata.org/wiki/[Entity_ID]\",    // Tier-1 KG anchor\n"
                     "  \"https://en.wikipedia.org/wiki/[Brand_Name]\", // Tier-1 KG anchor\n"
-=======
-                    "  \"https://www.wikidata.org/wiki/Q12345\",    // Tier-1 KG anchor\n"
-                    "  \"https://en.wikipedia.org/wiki/Acme_Corp\", // Tier-1 KG anchor\n"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                     "  // ... keep existing social / directory links below ...\n"
                     "]"
                 ),

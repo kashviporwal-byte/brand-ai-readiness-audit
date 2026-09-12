@@ -1035,7 +1035,6 @@ def main():
     args = parser.parse_args()
 
     try:
-<<<<<<< HEAD
         # Determine output format and quietness
         # 1. Explicit flags override everything
         # 2. If no flags, TTY detection determines if we are in a terminal or a pipe
@@ -1046,25 +1045,15 @@ def main():
         report, ai_score, _ = run_full_audit(
             args.url,
             quiet=quiet_mode,
-=======
-        report, ai_score, _ = run_full_audit(
-            args.url,
-            quiet=args.quiet or args.json,
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             multi_page=args.multi_page,
             max_pages=args.max_pages
         )
 
-<<<<<<< HEAD
         if use_json_stdout:
-=======
-        if args.json:
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             print(json.dumps(report, indent=2))
         else:
             print_terminal_dashboard(report, ai_score)
 
-<<<<<<< HEAD
         # Always save to JSON file (default to report.json if --output not provided)
         out_path = os.path.abspath(args.output if args.output else "report.json")
         with open(out_path, "w", encoding="utf-8") as f:
@@ -1073,12 +1062,6 @@ def main():
         # Only print the "written to" message if we are in TTY mode
         # to avoid polluting raw JSON output for automated evaluators.
         if not use_json_stdout:
-=======
-        if args.output:
-            out_path = os.path.abspath(args.output)
-            with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(report, f, indent=2)
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             print(f"[OK] Full JSON report written to: {out_path}")
 
     except Exception as e:

@@ -106,11 +106,7 @@ def check_semantic_hierarchy(raw_html, page_url=""):
                     "summary": "Ensure the primary <h1> is visually rendered in the DOM above the fold.",
                     "priority": "high",
                     "rationale": "Search and AI agents penalize hidden heading cloaking to prevent manipulative keyword stuffing.",
-<<<<<<< HEAD
                     "code_fix_example": "<h1>[Brand Name]: [Core Value Proposition]</h1>"
-=======
-                    "code_fix_example": "<h1>Acme Cloud Platform: Automated Workflow Orchestration</h1>"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 }
             })
         else:
@@ -125,11 +121,7 @@ def check_semantic_hierarchy(raw_html, page_url=""):
                     "summary": "Introduce a single, descriptive <h1> tag encapsulating the primary entity and value proposition.",
                     "priority": "high",
                     "rationale": "Without an H1, AI document parsers struggle to establish the primary subject matter of the document, reducing citation confidence.",
-<<<<<<< HEAD
                     "code_fix_example": "<h1>[Brand Name]: [Core Value Proposition]</h1>"
-=======
-                    "code_fix_example": "<h1>Acme Cloud Platform: Automated Enterprise Workflow Orchestration</h1>"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 }
             })
     elif len(visible_h1s) > 1:

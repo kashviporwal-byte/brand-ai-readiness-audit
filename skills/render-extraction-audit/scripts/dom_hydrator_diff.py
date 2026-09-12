@@ -156,11 +156,7 @@ def check_hydration_gap(raw_html, page_url=""):
                 "summary": "Expand static page copy to include substantive brand overview and value proposition.",
                 "priority": "low",
                 "rationale": "LLMs and search indexing crawlers require sufficient descriptive text to understand the entity's offering.",
-<<<<<<< HEAD
                 "code_fix_example": "<main>\n  <h1>[Brand Name]</h1>\n  <p>[Brand Name] [actionable verb] [product/service] with [specific technical benefit/metric]...</p>\n</main>"
-=======
-                "code_fix_example": "<main>\n  <h1>Acme Inc</h1>\n  <p>Acme delivers automated enterprise workflow orchestration with real-time event routing...</p>\n</main>"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             }
         })
     elif word_count < 100 and raw_size_bytes > 30000:
@@ -193,11 +189,7 @@ def check_hydration_gap(raw_html, page_url=""):
                 "summary": "Provide an accessible <noscript> section containing a factual 200-word overview of the page.",
                 "priority": "medium",
                 "rationale": "Ensures baseline text extraction succeeds even when headless execution fails or times out.",
-<<<<<<< HEAD
                 "code_fix_example": '<noscript>\n  <div class="no-js-summary">\n    <h2>[Brand Name]</h2>\n    <p>[Brand Name] [actionable verb] [product/service] with [specific technical benefit/metric]...</p>\n  </div>\n</noscript>'
-=======
-                "code_fix_example": '<noscript>\n  <div class="no-js-summary">\n    <h2>Acme Cloud Platform</h2>\n    <p>Acme delivers automated enterprise workflow orchestration with sub-millisecond event streaming...</p>\n  </div>\n</noscript>'
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             }
         })
 

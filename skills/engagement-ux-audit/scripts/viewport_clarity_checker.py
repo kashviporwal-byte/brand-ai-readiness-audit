@@ -198,13 +198,8 @@ def check_viewport_clarity(raw_html, page_url=""):
                 ),
                 "code_fix_example": (
                     "<!-- Instead of: <h1>Unleash Tomorrow</h1> -->\n"
-<<<<<<< HEAD
                     "<h1>[Brand Name]: [Core Value Proposition]</h1>\n"
                     "<p class=\"hero-subhead\">[One-sentence explanation of how the brand solves a specific problem for its target audience].</p>"
-=======
-                    "<h1>Real-Time Fraud Detection Engine for Payment Processors</h1>\n"
-                    "<p class=\"hero-subhead\">Stop 99.8% of unauthorized transactions with sub-10ms AI decisioning.</p>"
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
                 )
             }
         })

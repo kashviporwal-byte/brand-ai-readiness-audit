@@ -220,7 +220,6 @@ def check_tldr_summary_block(raw_html, page_url=""):
     """
     if not raw_html:
         return []
-<<<<<<< HEAD
 
     # Use the robust _ContentParser to avoid counting scripts/styles as words
     parser = _ContentParser()
@@ -236,13 +235,6 @@ def check_tldr_summary_block(raw_html, page_url=""):
         return []
 
 
-=======
-    clean_text = re.sub(r'<[^>]+>', ' ', raw_html)
-    words = clean_text.split()
-    if len(words) < 800:
-        return []
-
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
     has_tldr = bool(re.search(
         r'<(?:h[1-4]|div|section)\b[^>]*>(?:[^<]*\b(?:tl;?dr|key takeaways|summary|at a glance|executive summary)\b[^<]*)</(?:h[1-4]|div|section)>',
         raw_html, re.IGNORECASE
@@ -430,14 +422,8 @@ def check_information_density(raw_html, page_url=""):
                 '<p>Our revolutionary, next-generation platform empowers enterprises to '
                 'unleash synergistic value with seamless, best-in-class solutions.</p>\n\n'
                 '<!-- AFTER (high density): -->\n'
-<<<<<<< HEAD
                 '<p>[Brand Name] [actionable verb] [quantity/metric] [unit] per [timeframe] with '
                 '[specific technical standard], ensuring [measurable outcome] across [scale].</p>'
-=======
-                '<p>Acme Cloud processes 10 billion API events per day with p99 latency '
-                'of 4ms, using AES-256 encryption at rest and TLS 1.3 in transit, '
-                'across 40 data centers in 15 countries.</p>'
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             ),
         ))
 
@@ -471,19 +457,11 @@ def check_information_density(raw_html, page_url=""):
             ),
             code_fix=(
                 '<!-- Replace marketing phrases with factual alternatives: -->\n\n'
-<<<<<<< HEAD
                 '  "[Vague Superlative]" → "[Quantified Fact/Metric]"\n'
                 '  "[Industry Cliché]" → "[Specific Certification/Standard]"\n'
                 '  "[Buzzword Integration]" → "[Technical API/Latency Specification]"\n'
                 '  "[Generic AI Claim]" → "[Specific Model/Training Dataset]"\n'
                 '  "[Vague Empowerment]" → "[Measurable Reduction in Time/Error]"'
-=======
-                '  "revolutionary platform" → "event-streaming platform processing 10B events/day"\n'
-                '  "best-in-class security" → "SOC 2 Type II certified, FIPS 140-2 validated"\n'
-                '  "seamless integration"  → "REST and GraphQL APIs with < 200ms p95 response"\n'
-                '  "next-generation AI"    → "GPT-4 Turbo fine-tuned on domain-specific data"\n'
-                '  "empowers teams"        → "reduces alert triage time from 45 min to 8 min"'
->>>>>>> cfb7f7498d9485536d2a98d5fb78a1066977a3fc
             ),
         ))
 
